@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VOX Logger">
+<meta name="theme-color" content="#0057ff">
+<link rel="manifest" href="manifest.json">
+<title>Vox FTTH — Unified Manager & Field Logger</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f0f4ff;--card:#fff;--accent:#0057ff;--accent-light:#e8eeff;--text:#0f1623;--muted:#7a8aaa;--border:#dde3f0;--green:#00c07a;--orange:#ff6b35;--yellow:#f5a623;--red:#ff3b3b;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);font-family:'Nunito',sans-serif;min-height:100vh;padding-bottom:100px;}
+
+/* LOGIN STYLES */
+.login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,#0a0e1a 0%,#0d1a3a 100%);}
+.login-logo{font-family:'Bebas Neue';font-size:48px;letter-spacing:6px;color:#fff;margin-bottom:6px;}
+.login-sub{font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:40px;}
+.login-card{background:#fff;border-radius:24px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
+.login-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px;}
+.login-tab-btn{flex:1;padding:12px;background:none;border:none;font-family:'Nunito';font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.15s;z-index:10;position:relative;}
+.login-tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.login-title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.login-hint{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.login-input{width:100%;border:2px solid var(--border);border-radius:12px;padding:13px 15px;font-family:'Nunito';font-size:15px;font-weight:700;color:var(--text);background:var(--bg);margin-bottom:12px;transition:border-color 0.15s;z-index:5;position:relative;}
+.login-input:focus{outline:none;border-color:var(--accent);}
+.pin-display{display:flex;justify-content:center;gap:12px;margin:18px 0 14px;}
+.pin-circle{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all 0.15s;}
+.pin-circle.filled{background:var(--accent);border-color:var(--accent);}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px;}
+.num-btn{background:var(--bg);border:2px solid var(--border);border-radius:13px;padding:15px;font-family:'Bebas Neue';font-size:24px;color:var(--text);cursor:pointer;text-align:center;transition:all 0.1s;z-index:5;position:relative;}
+.num-btn:active{background:var(--accent-light);border-color:var(--accent);transform:scale(0.95);}
+.num-btn.del{font-size:18px;color:var(--muted);}
+.num-btn.zero{grid-column:2;}
+.login-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--accent),#0044cc);color:#fff;border:none;border-radius:13px;font-family:'Nunito';font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 6px 20px rgba(0,87,255,0.3);transition:all 0.2s;z-index:5;position:relative;}
+.login-btn:disabled{background:#ccc;box-shadow:none;cursor:not-allowed;}
+.login-btn:active{transform:scale(0.98);}
+.login-error{color:var(--red);font-size:13px;font-weight:700;text-align:center;margin-top:8px;min-height:20px;}
+.login-form{display:none;position:relative;z-index:1;}
+.login-form.active{display:block;}
+
+.logout-btn{position:fixed;top:14px;right:14px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;z-index:50;font-family:'Nunito';}
+
+/* HEADER */
+.header{padding:20px 20px 28px;position:relative;overflow:hidden;}
+.header::after{content:'';position:absolute;bottom:-20px;left:0;right:0;height:40px;background:var(--bg);border-radius:50% 50% 0 0/100% 100% 0 0;}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.logo{font-family:'Bebas Neue';font-size:20px;letter-spacing:3px;color:rgba(255,255,255,0.6);}
+.date-chip{background:rgba(255,255,255,0.2);color:#fff;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;}
+.header h1{color:#fff;font-size:24px;font-weight:800;line-height:1.1;}
+.header p{color:rgba(255,255,255,0.7);font-size:13px;margin-top:3px;}
+.sync-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border-radius:20px;padding:4px 10px;margin-top:7px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4);}
+.sync-dot.live{background:#00e5a0;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.sync-text{font-size:11px;color:#fff;font-weight:700;opacity:0.85;}
+
+/* NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.08);}
+.nav-tab{flex:1;padding:11px 6px 13px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:none;}
+.nav-tab .tab-icon{font-size:20px;}
+.nav-tab .tab-label{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;}
+.nav-tab.active .tab-label{color:var(--accent);}
+.nav-tab.active .tab-icon{transform:scale(1.1);}
+
+.section{padding:0 16px;margin-top:18px;}
+.section-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+.page{display:none;}.page.active{display:block;}
+
+.day-chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.day-chips::-webkit-scrollbar{display:none;}
+.day-chip{background:var(--card);border:2px solid var(--border);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all 0.15s;flex-shrink:0;}
+.day-chip.active{color:#fff;}
+
+/* ACTIVITIES */
+.activity-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.activity-wrapper{display:flex;flex-direction:column;}
+.activity-card{background:var(--card);border-radius:15px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,0.05);border:1px solid var(--border);}
+.activity-icon{font-size:22px;margin-bottom:7px;}
+.activity-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:9px;}
+.counter{display:flex;align-items:center;justify-content:space-between;gap:7px;}
+.cnt-btn{width:34px;height:34px;border-radius:50%;border:none;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;flex-shrink:0;}
+.cnt-minus{background:#f0f4ff;}.cnt-minus:active{transform:scale(0.92);}
+.cnt-plus{color:#fff;box-shadow:0 3px 10px rgba(0,87,255,0.3);}.cnt-plus:active{transform:scale(0.92);}
+.cnt-value{font-family:'Bebas Neue';font-size:30px;color:var(--text);min-width:36px;text-align:center;line-height:1;}
+
+.detail-panel{display:none;background:#f8faff;border:1px solid var(--border);border-top:none;border-radius:0 0 15px 15px;padding:14px;gap:10px;flex-direction:column;margin-top:-4px;}
+.detail-panel.active{display:flex;}
+.detail-group{display:flex;flex-direction:column;gap:6px;}
+.detail-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.detail-required{color:var(--red);font-weight:700;}
+.detail-input,.detail-select,.detail-textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:'Nunito';font-size:13px;color:var(--text);background:var(--card);transition:border-color 0.15s;}
+.detail-input:focus,.detail-select:focus,.detail-textarea:focus{outline:none;border-color:var(--accent);}
+.detail-textarea{resize:vertical;min-height:70px;}
+.detail-input::placeholder,.detail-textarea::placeholder{color:var(--muted);}
+.detail-button{padding:9px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-family:'Nunito';font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s;align-self:flex-start;}
+.detail-button:active{transform:scale(0.98);}
+
+.submit-btn{width:100%;padding:16px;color:#fff;border:none;border-radius:15px;font-family:'Nunito';font-size:15px;font-weight:800;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.submit-btn:active{transform:scale(0.98);}
+.submit-btn:disabled{background:#aaa!important;box-shadow:none;cursor:not-allowed;}
+.saving-indicator{text-align:center;font-size:12px;color:var(--muted);margin-top:7px;min-height:18px;}
+
+#rep-mini-map{width:100%;height:200px;border-radius:14px;overflow:hidden;border:1px solid var(--border);margin-top:4px;}
+.loc-status{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--card);border-radius:10px;border:1px solid var(--border);font-size:12px;color:var(--muted);}
+.loc-status-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.loc-status-dot.got{background:var(--green);}
+.loc-history-list{margin-top:8px;}
+.loc-hist-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);}
+.loc-hist-item:last-child{border-bottom:none;}
+.loc-hist-time{font-weight:700;color:var(--text);min-width:45px;}
+
+.progress-hero{border-radius:18px;padding:22px;color:#fff;text-align:center;margin-bottom:14px;position:relative;overflow:hidden;}
+.progress-hero::before{content:'';position:absolute;top:-30px;right:-30px;width:110px;height:110px;background:rgba(255,255,255,0.08);border-radius:50%;}
+.hero-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:0.75;margin-bottom:5px;}
+.hero-pct{font-family:'Bebas Neue';font-size:72px;line-height:1;letter-spacing:2px;}
+.hero-sub{font-size:13px;opacity:0.85;margin-top:5px;font-weight:600;}
+.streak-row{display:flex;gap:9px;margin-bottom:14px;}
+.streak-card{flex:1;background:var(--card);border-radius:12px;padding:12px;border:1px solid var(--border);text-align:center;}
+.streak-val{font-family:'Bebas Neue';font-size:26px;color:var(--accent);}
+.streak-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:1px;}
+
+.metric-progress-card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:10px;border:1px solid var(--border);}
+.mp-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.mp-left{display:flex;align-items:center;gap:9px;}
+.mp-icon{font-size:20px;}.mp-name{font-weight:700;font-size:14px;color:var(--text);}
+.mp-nums{font-family:'Bebas Neue';font-size:20px;}
+.mp-track{height:9px;background:#eef1f8;border-radius:20px;overflow:hidden;margin-bottom:7px;}
+.mp-fill{height:100%;border-radius:20px;transition:width 0.8s cubic-bezier(0.4,0,0.2,1);}
+.mp-footer{display:flex;align-items:center;justify-content:space-between;}
+.mp-status{font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.status-green{background:#e6faf3;color:var(--green);}
+.status-yellow{background:#fff8e6;color:var(--yellow);}
+.status-red{background:#fff0f0;color:var(--red);}
+.mp-days-left{font-size:11px;color:var(--muted);font-weight:600;}
+
+.day-breakdown{background:var(--card);border-radius:14px;padding:14px;border:1px solid var(--border);}
+.db-row{display:flex;align-items:center;justify-content:space-between;padding:7px 4px;border-bottom:1px solid var(--border);}
+.db-row:last-child{border-bottom:none;}
+.db-day{font-weight:700;font-size:13px;color:var(--text);min-width:48px;}
+.db-dots{flex:1;display:flex;gap:5px;margin:0 9px;}
+.db-dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;}
+.db-dot.filled{background:var(--accent);}
+.db-total{font-family:'Bebas Neue';font-size:19px;min-width:26px;text-align:right;}
+.week-info{font-size:11px;color:var(--muted);font-weight:600;text-align:center;padding:11px;}
+
+/* MANAGER STYLES */
+.manager-nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:0;overflow-x:auto;}
+.manager-nav-tab{flex:0 0 auto;padding:14px 16px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;text-align:center;white-space:nowrap;min-width:100px;}
+.manager-nav-tab:hover{color:var(--text);}
+.manager-nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+.manager-wrap{max-width:1200px;margin:0 auto;padding:24px;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;padding:16px 0;}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;position:relative;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:500;}
+.kpi-value{font-family:'Bebas Neue';font-size:32px;line-height:1.1;margin-top:2px;color:var(--accent);}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+
+.reps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:0;border-top:1px solid var(--border);}
+.rep-panel{padding:18px 24px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
+.rep-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.rep-name-block{display:flex;align-items:center;gap:10px;}
+.rep-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:14px;color:#fff;flex-shrink:0;}
+.rep-name{font-weight:600;font-size:14px;}.rep-title{font-size:11px;color:var(--muted);}
+.perf-badge{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:20px;}
+.badge-green{background:rgba(0,229,160,0.15);color:var(--green);}
+.badge-yellow{background:rgba(255,209,102,0.15);color:var(--yellow);}
+.badge-red{background:rgba(255,71,87,0.15);color:var(--red);}
+
+.expandable-section{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer;user-select:none;}
+.expandable-section.expanded{background:var(--card);}
+.expandable-title{display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:12px;color:var(--text);}
+.expand-icon{transition:transform 0.2s;}
+.expand-icon.expanded{transform:rotate(180deg);}
+.expandable-content{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.expandable-content.shown{display:block;}
+.record-item{font-size:11px;color:var(--muted);padding:5px 0;border-bottom:1px solid var(--border);line-height:1.4;}
+.record-item:last-child{border-bottom:none;}
+.record-label{font-weight:700;color:var(--text);}
+
+.settings-wrap{max-width:780px;margin:0 auto;padding:28px;}
+.settings-section{margin-bottom:36px;}
+.settings-title{font-family:'Bebas Neue';font-size:20px;letter-spacing:2px;color:var(--text);margin-bottom:3px;}
+.settings-sub{font-size:13px;color:var(--muted);margin-bottom:16px;}
+.rep-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:16px;}
+.rep-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;}
+.rep-card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.rep-card-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:16px;color:#fff;flex-shrink:0;}
+.rep-card-name{font-weight:700;font-size:14px;}.rep-card-id{font-size:10px;color:var(--muted);}
+.rep-card-actions{display:flex;gap:6px;margin-top:10px;}
+.btn-sm{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:'Nunito';transition:all 0.15s;}
+.btn-sm:hover{opacity:0.8;}
+.btn-edit{background:var(--card);color:var(--text);border:1px solid var(--border);}
+.delete-x{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:rgba(255,71,87,0.1);color:var(--red);border:none;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.delete-x:hover{background:rgba(255,71,87,0.25);}
+
+.form-title{font-weight:600;font-size:14px;margin-bottom:14px;color:var(--accent);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600;}
+.form-input{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:9px 12px;font-family:'Nunito';font-size:13px;transition:border-color 0.15s;z-index:5;position:relative;}
+.form-input:focus{outline:none;border-color:var(--accent);}
+.form-input::placeholder{color:var(--muted);}
+
+.color-row{display:flex;gap:7px;flex-wrap:wrap;}
+.color-opt{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.15s;}
+.color-opt.selected{border-color:#fff;transform:scale(1.15);}
+
+.btn-add-rep{background:linear-gradient(135deg,var(--accent),#0044cc);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:'Nunito';font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;}
+.btn-add-rep:active{transform:scale(0.98);}
+
+.btn-export{background:linear-gradient(135deg,var(--green),#00aa77);color:#0a0e1a;border:none;border-radius:8px;padding:9px 18px;font-family:'Nunito';font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:14px;margin-right:8px;}
+.btn-export:hover{opacity:0.9;}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;padding:13px 22px;border-radius:40px;font-weight:700;font-size:14px;opacity:0;transition:all 0.3s;pointer-events:none;white-space:nowrap;box-shadow:0 8px 24px rgba(0,192,122,0.4);z-index:999;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:500px;max-height:80vh;overflow-y:auto;}
+.modal h3{font-family:'Bebas Neue';font-size:20px;letter-spacing:1px;margin-bottom:14px;color:var(--accent);}
+.modal .form-group{margin-bottom:10px;}
+.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+.btn-cancel{background:var(--bg);border:1px solid var(--border);color:var(--muted);padding:8px 16px;border-radius:7px;cursor:pointer;font-family:'Nunito';font-size:13px;}
+.btn-cancel:active{transform:scale(0.98);}
+.btn-confirm{background:linear-gradient(135deg,var(--accent),#0044cc);color:#fff;border:none;padding:8px 16px;border-radius:7px;cursor:pointer;font-family:'Nunito';font-size:13px;font-weight:600;}
+.btn-confirm:active{transform:scale(0.98);}
+
+.calendar-wrapper{background:var(--card);border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:14px;}
+.calendar-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.calendar-title{font-weight:700;font-size:13px;color:var(--text);}
+.calendar-badge{background:rgba(0,87,255,0.1);color:var(--accent);padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700;}
+.calendar-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.calendar-day{padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);}
+.calendar-day-name{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;text-align:center;padding:4px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.calendar-task{font-size:10px;padding:3px 5px;background:rgba(0,87,255,0.1);color:var(--accent);border-radius:4px;margin-bottom:3px;line-height:1.2;font-weight:600;}
+.calendar-time{font-size:9px;color:var(--muted);font-weight:600;}
+
+.empty-state{text-align:center;padding:36px;color:var(--muted);font-size:14px;}
+.empty-icon{font-size:36px;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<!-- PERMISSION SCREEN -->
+<div id="permission-screen" style="display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:linear-gradient(160deg,#0a0e1a 0%,#0d1a3a 100%);text-align:center">
+  <div style="font-family:'Bebas Neue';font-size:52px;letter-spacing:6px;color:#fff;margin-bottom:4px">VOX</div>
+  <div style="font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:48px">Field Logger</div>
+  <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:24px;padding:32px 28px;width:100%;max-width:360px;margin-bottom:24px">
+    <div style="font-size:52px;margin-bottom:16px">📍</div>
+    <div style="font-family:'Bebas Neue';font-size:26px;letter-spacing:2px;color:#fff;margin-bottom:10px">Location Access Required</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.6;margin-bottom:24px">VOX needs your location to track your route, log visits on the map, and let your manager see where you are in real time.</div>
+    <div style="background:rgba(0,87,255,0.15);border:1px solid rgba(0,87,255,0.3);border-radius:14px;padding:14px;margin-bottom:24px;text-align:left">
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px">What we use it for</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.75);display:flex;flex-direction:column;gap:8px">
+        <div>📍 Auto-tag your activity check-ins</div>
+        <div>🗺 Show your route on the manager map</div>
+        <div>🟢 Display your online status to the manager</div>
+        <div>🔒 Data is only shared with your company</div>
+      </div>
+    </div>
+    <button id="grant-location-btn" onclick="requestLocationPermission()" style="width:100%;background:#0057ff;color:#fff;border:none;border-radius:14px;padding:16px;font-family:'Nunito';font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px">Allow Location Access</button>
+    <button onclick="skipLocationPermission()" style="width:100%;background:transparent;color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px;font-family:'Nunito';font-size:13px;font-weight:600;cursor:pointer">Skip for now (manager login only)</button>
+  </div>
+  <div id="permission-status" style="font-size:12px;color:rgba(255,255,255,0.4);min-height:20px"></div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-logo">VOX</div>
+  <div class="login-sub">FTTH Manager & Field Logger</div>
+  <div class="login-card">
+    <div class="login-tabs">
+      <button class="login-tab-btn active" id="tab-rep-btn" onclick="switchLoginTab('rep')">Rep Login</button>
+      <button class="login-tab-btn" id="tab-mgr-btn" onclick="switchLoginTab('manager')">Manager</button>
+    </div>
+
+    <!-- REP LOGIN -->
+    <div class="login-form active" id="rep-login-form">
+      <div class="login-title">Welcome 👋</div>
+      <div class="login-hint">Enter your name and PIN.</div>
+      <input class="login-input" id="login-name" placeholder="Your full name..." autocomplete="off"/>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px">Your PIN</div>
+      <div class="pin-display">
+        <div class="pin-circle" id="pc0"></div><div class="pin-circle" id="pc1"></div>
+        <div class="pin-circle" id="pc2"></div><div class="pin-circle" id="pc3"></div>
+      </div>
+      <div class="numpad">
+        <div class="num-btn" onclick="numpad('1')">1</div><div class="num-btn" onclick="numpad('2')">2</div><div class="num-btn" onclick="numpad('3')">3</div>
+        <div class="num-btn" onclick="numpad('4')">4</div><div class="num-btn" onclick="numpad('5')">5</div><div class="num-btn" onclick="numpad('6')">6</div>
+        <div class="num-btn" onclick="numpad('7')">7</div><div class="num-btn" onclick="numpad('8')">8</div><div class="num-btn" onclick="numpad('9')">9</div>
+        <div class="num-btn del" onclick="numpad('del')">⌫</div><div class="num-btn zero" onclick="numpad('0')">0</div>
+      </div>
+      <button class="login-btn" id="rep-login-btn" onclick="doRepLogin()">Login</button>
+      <div class="login-error" id="rep-login-error"></div>
+    </div>
+
+    <!-- MANAGER LOGIN -->
+    <div class="login-form" id="manager-login-form">
+      <div class="login-title">Manager Login</div>
+      <div class="login-hint">Enter your credentials.</div>
+      <input class="login-input" id="manager-username" placeholder="Username or Email" autocomplete="username"/>
+      <input class="login-input" id="manager-password" placeholder="Password" type="password" autocomplete="current-password"/>
+      <button class="login-btn" id="manager-login-btn" onclick="doManagerLogin()">Login</button>
+      <div class="login-error" id="manager-login-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- REP APP -->
+<div id="rep-app" style="display:none">
+  <button class="logout-btn" onclick="logout()">⬅ Logout</button>
+  
+  <div class="header" id="app-header">
+    <div style="text-align:center;margin-bottom:6px">
+      <div class="date-chip" id="date-chip" style="display:inline-block;background:rgba(255,255,255,0.25);font-size:13px;font-weight:700;padding:5px 16px;border-radius:20px;letter-spacing:0.5px"></div>
+    </div>
+    <div class="header-top" style="justify-content:center;margin-bottom:6px">
+      <div class="logo">VOX</div>
+    </div>
+    <h1 id="header-title" style="text-align:center">Field Logger</h1>
+    <p style="text-align:center">FTTH Sales · Bloemfontein</p>
+    <div style="display:flex;justify-content:center;margin-top:7px">
+      <div class="sync-pill">
+        <div class="sync-dot" id="sync-dot"></div>
+        <div class="sync-text" id="sync-text">Connecting...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG PAGE -->
+  <div id="page-log" class="page active">
+    <div class="section" style="margin-top:14px">
+      <div class="section-title">Select Day</div>
+      <div class="day-chips">
+        <div class="day-chip" data-day="Mon" onclick="selectDay('Mon')">Mon</div>
+        <div class="day-chip" data-day="Tue" onclick="selectDay('Tue')">Tue</div>
+        <div class="day-chip" data-day="Wed" onclick="selectDay('Wed')">Wed</div>
+        <div class="day-chip" data-day="Thu" onclick="selectDay('Thu')">Thu</div>
+        <div class="day-chip" data-day="Fri" onclick="selectDay('Fri')">Fri</div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="section">
+      <div class="section-title">📅 Your Weekly Plan</div>
+      <div class="calendar-wrapper">
+        <div class="calendar-header">
+          <div class="calendar-title">Assigned Tasks</div>
+        </div>
+        <div id="rep-calendar"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Log Activities</div>
+      <div class="activity-grid">
+
+        <!-- INTERACTIONS -->
+        <div class="activity-wrapper">
+          <div class="activity-card">
+            <div class="activity-icon">👥</div>
+            <div class="activity-label">Interactions</div>
+            <div class="counter">
+              <button class="cnt-btn cnt-minus" onclick="adjustActivity('interactions',-1)">−</button>
+              <div class="cnt-value" id="val-interactions">0</div>
+              <button class="cnt-btn cnt-plus" id="plus-interactions" onclick="adjustActivity('interactions',1)">+</button>
+            </div>
+          </div>
+          <div class="detail-panel" id="detail-interactions">
+            <div class="detail-group">
+              <label class="detail-label">First Name <span class="detail-required">*</span></label>
+              <input class="detail-input" id="int-fname" placeholder="First name"/>
+            </div>
+            <div class="detail-group">
+              <label class="detail-label">Last Name <span class="detail-required">*</span></label>
+              <input class="detail-input" id="int-lname" placeholder="Last name"/>
+            </div>
+            <div class="detail-group">
+              <label class="detail-label">Interaction Type <span class="detail-required">*</span></label>
+              <select class="detail-select" id="int-type" onchange="updateInteractionFields()">
+                <option value="">Select type...</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="call">Call</option>
+                <option value="inperson">In Person</option>
+                <option value="email">Email</option>
+              </select>
+            </div>
+            <div id="int-conditional-fields"></div>
+            <div class="detail-group">
+              <label class="detail-label">Area/Location</label>
+              <input class="detail-input" id="int-area" placeholder="Suburb or estate name"/>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="detail-button" style="background:#f0f4ff;color:var(--muted);flex:1" onclick="cancelActivity('interactions')">✕ Cancel</button>
+              <button class="detail-button" style="flex:2" onclick="saveInteraction()">✓ Save Interaction</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DOOR KNOCKS -->
+        <div class="activity-wrapper">
+          <div class="activity-card">
+            <div class="activity-icon">🚪</div>
+            <div class="activity-label">Door Knocks</div>
+            <div class="counter">
+              <button class="cnt-btn cnt-minus" onclick="adjustActivity('doors',-1)">−</button>
+              <div class="cnt-value" id="val-doors">0</div>
+              <button class="cnt-btn cnt-plus" id="plus-doors" onclick="adjustActivity('doors',1)">+</button>
+            </div>
+          </div>
+          <div class="detail-panel" id="detail-doors">
+            <div class="detail-group">
+              <label class="detail-label">Street Address <span class="detail-required">*</span></label>
+              <input class="detail-input" id="door-address" placeholder="Street address"/>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="detail-button" style="background:#f0f4ff;color:var(--muted);flex:1" onclick="cancelActivity('doors')">✕ Cancel</button>
+              <button class="detail-button" style="flex:2" onclick="saveDoorKnock()">✓ Save Door Knock</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUOTES -->
+        <div class="activity-wrapper">
+          <div class="activity-card">
+            <div class="activity-icon">📋</div>
+            <div class="activity-label">Quotes Sent</div>
+            <div class="counter">
+              <button class="cnt-btn cnt-minus" onclick="adjustActivity('quotes',-1)">−</button>
+              <div class="cnt-value" id="val-quotes">0</div>
+              <button class="cnt-btn cnt-plus" id="plus-quotes" onclick="adjustActivity('quotes',1)">+</button>
+            </div>
+          </div>
+          <div class="detail-panel" id="detail-quotes">
+            <div class="detail-group">
+              <label class="detail-label">Quote Number <span class="detail-required">*</span></label>
+              <input class="detail-input" id="quote-number" placeholder="e.g. QT-2025-001"/>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="detail-button" style="background:#f0f4ff;color:var(--muted);flex:1" onclick="cancelActivity('quotes')">✕ Cancel</button>
+              <button class="detail-button" style="flex:2" onclick="saveQuote()">✓ Save Quote</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ORDERS -->
+        <div class="activity-wrapper">
+          <div class="activity-card">
+            <div class="activity-icon">📦</div>
+            <div class="activity-label">Orders Logged</div>
+            <div class="counter">
+              <button class="cnt-btn cnt-minus" onclick="adjustActivity('orders',-1)">−</button>
+              <div class="cnt-value" id="val-orders">0</div>
+              <button class="cnt-btn cnt-plus" id="plus-orders" onclick="adjustActivity('orders',1)">+</button>
+            </div>
+          </div>
+          <div class="detail-panel" id="detail-orders">
+            <div class="detail-group">
+              <label class="detail-label">Account Number <span class="detail-required">*</span></label>
+              <input class="detail-input" id="order-account" placeholder="Account number"/>
+            </div>
+            <div class="detail-group">
+              <label class="detail-label">Order Number <span class="detail-required">*</span></label>
+              <input class="detail-input" id="order-number" placeholder="Order number"/>
+            </div>
+            <div class="detail-group">
+              <label class="detail-label">Service Type <span class="detail-required">*</span></label>
+              <select class="detail-select" id="order-type">
+                <option value="">Select service type...</option>
+                <option value="FTTH">FTTH</option>
+                <option value="FTTB">FTTB</option>
+                <option value="LTE">LTE</option>
+                <option value="WIRELESS">WIRELESS</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="detail-button" style="background:#f0f4ff;color:var(--muted);flex:1" onclick="cancelActivity('orders')">✕ Cancel</button>
+              <button class="detail-button" style="flex:2" onclick="saveOrder()">✓ Save Order</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOLLOW-UPS -->
+        <div class="activity-wrapper">
+          <div class="activity-card">
+            <div class="activity-icon">🔄</div>
+            <div class="activity-label">Follow-ups</div>
+            <div class="counter">
+              <button class="cnt-btn cnt-minus" onclick="adjustActivity('followups',-1)">−</button>
+              <div class="cnt-value" id="val-followups">0</div>
+              <button class="cnt-btn cnt-plus" id="plus-followups" onclick="adjustActivity('followups',1)">+</button>
+            </div>
+          </div>
+          <div class="detail-panel" id="detail-followups">
+            <div class="detail-group">
+              <label class="detail-label">Account Number <span class="detail-required">*</span></label>
+              <input class="detail-input" id="fu-account" placeholder="Account number"/>
+            </div>
+            <div class="detail-group">
+              <label class="detail-label">Customer Name <span class="detail-required">*</span></label>
+              <input class="detail-input" id="fu-name" placeholder="Customer name"/>
+            </div>
+            <div class="detail-group">
+              <label class="detail-label">Comments <span class="detail-required">*</span></label>
+              <textarea class="detail-textarea" id="fu-comments" placeholder="What needs to be done/said..."></textarea>
+            </div>
+            <div class="detail-group">
+              <label class="detail-label">Feedback / Notes</label>
+              <textarea class="detail-textarea" id="fu-feedback" placeholder="Internal feedback to manager..."></textarea>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="detail-button" style="background:#f0f4ff;color:var(--muted);flex:1" onclick="cancelActivity('followups')">✕ Cancel</button>
+              <button class="detail-button" style="flex:2" onclick="saveFollowUp()">✓ Save Follow-up</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:14px;margin-bottom:20px">
+      <button class="submit-btn" id="save-btn" onclick="submitDay()">📍 Save & Share Location</button>
+      <div class="saving-indicator" id="saving-indicator"></div>
+    </div>
+  </div>
+
+  <!-- MAP PAGE -->
+  <div id="page-map" class="page">
+    <div class="section">
+      <div class="section-title">My Location Today</div>
+      <div class="loc-status" id="loc-status">
+        <div class="loc-status-dot" id="loc-dot"></div>
+        <span id="loc-status-text">Location not yet captured. Save an activity to record your position.</span>
+      </div>
+      <div id="rep-mini-map" style="margin-top:12px"></div>
+      <div class="section-title" style="margin-top:18px">This Week's Check-ins</div>
+      <div class="loc-history-list" id="loc-history-list">
+        <div style="color:var(--muted);font-size:13px;padding:8px 0">No check-ins recorded yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS PAGE -->
+  <div id="page-progress" class="page">
+    <div class="section">
+      <div class="progress-hero" id="progress-hero" style="background:linear-gradient(135deg,#0057ff,#0099ff)">
+        <div class="hero-label">Weekly Target Progress</div>
+        <div class="hero-pct" id="hero-pct">0%</div>
+        <div class="hero-sub" id="hero-sub">Let's get those numbers up!</div>
+      </div>
+      <div class="streak-row">
+        <div class="streak-card"><div class="streak-val" id="stat-days">0</div><div class="streak-label">Days Logged</div></div>
+        <div class="streak-card"><div class="streak-val" id="stat-best">—</div><div class="streak-label">Best Day</div></div>
+        <div class="streak-card"><div class="streak-val" id="stat-orders">0</div><div class="streak-label">Orders 🏆</div></div>
+      </div>
+      <div class="section-title">Target Breakdown</div>
+      <div id="progress-metrics"></div>
+      <div class="section-title" style="margin-top:18px">Daily Breakdown</div>
+      <div class="day-breakdown" id="day-breakdown"></div>
+      <div class="week-info" id="week-info"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-tab active" id="tab-log" onclick="switchPage('log')"><div class="tab-icon">📝</div><div class="tab-label">Log</div></button>
+    <button class="nav-tab" id="tab-map" onclick="switchPage('map')"><div class="tab-icon">📍</div><div class="tab-label">Location</div></button>
+    <button class="nav-tab" id="tab-progress" onclick="switchPage('progress')"><div class="tab-icon">📊</div><div class="tab-label">Progress</div></button>
+  </div>
+</div>
+
+<!-- MANAGER APP -->
+<div id="manager-app" style="display:none">
+  <div class="manager-nav" style="display:flex;align-items:center">
+    <div class="manager-nav-tab active" id="nav-dashboard" onclick="switchManagerPage('dashboard')">📊 Dashboard</div>
+    <div class="manager-nav-tab" id="nav-map" onclick="switchManagerPage('map')">🗺 Live Map</div>
+    <div class="manager-nav-tab" id="nav-routes" onclick="switchManagerPage('routes')">🛣 Routes</div>
+    <div class="manager-nav-tab" id="nav-calendar" onclick="switchManagerPage('calendar')">📅 Calendar</div>
+    <div class="manager-nav-tab" id="nav-settings" onclick="switchManagerPage('settings')">⚙ Settings</div>
+    <div style="margin-left:auto;padding:0 12px;flex-shrink:0">
+      <button onclick="logout()" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-family:'Nunito';font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">⬅ Logout</button>
+    </div>
+  </div>
+
+  <div class="manager-wrap">
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div id="online-banner" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:18px;display:none">
+        <div style="font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">🟢 Online Now</div>
+        <div id="online-rep-list" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+      </div>
+      <div style="margin-bottom:20px">
+        <h2 style="font-family:'Bebas Neue';font-size:24px;letter-spacing:2px;margin-bottom:8px">Team Dashboard</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-export" onclick="exportRepData('individual')">📥 Export Individual Rep</button>
+          <button class="btn-export" onclick="exportRepData('combined')">📥 Export All Combined</button>
+        </div>
+      </div>
+
+      <div class="kpi-row" id="kpi-section"></div>
+      <div class="reps-grid" id="reps-grid-manager"></div>
+    </div>
+
+    <!-- LIVE MAP PAGE -->
+    <div id="page-map" class="page">
+      <div style="margin-bottom:16px">
+        <h2 style="font-family:'Bebas Neue';font-size:24px;letter-spacing:2px;margin-bottom:8px">🗺 Live Rep Map</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px">
+            <span style="font-weight:700;color:var(--muted)">Filter:</span>
+            <select id="map-rep-filter" onchange="renderManagerMap()" style="border:none;background:transparent;font-family:'Nunito';font-size:13px;font-weight:600;color:var(--text);cursor:pointer">
+              <option value="all">All Active Reps</option>
+            </select>
+          </div>
+          <div id="map-live-count" style="background:var(--accent-light);color:var(--accent);padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700"></div>
+          <button onclick="renderManagerMap()" style="background:var(--green);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-family:'Nunito';font-size:13px;font-weight:700;cursor:pointer">⟳ Refresh</button>
+        </div>
+        <div id="manager-live-map" style="width:100%;height:420px;border-radius:14px;border:1px solid var(--border);background:#e8edf5"></div>
+        <div style="margin-top:16px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Rep Locations — Today</div>
+          <div id="map-rep-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROUTES PAGE -->
+    <div id="page-routes" class="page">
+      <div style="margin-bottom:16px">
+        <h2 style="font-family:'Bebas Neue';font-size:24px;letter-spacing:2px;margin-bottom:8px">🛣 Rep Routes Today</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px">
+            <span style="font-weight:700;color:var(--muted)">Rep:</span>
+            <select id="route-rep-filter" onchange="renderRepRoute()" style="border:none;background:transparent;font-family:'Nunito';font-size:13px;font-weight:600;color:var(--text);cursor:pointer">
+              <option value="">Select a rep...</option>
+            </select>
+          </div>
+          <button onclick="renderRepRoute()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:8px 16px;font-family:'Nunito';font-size:13px;font-weight:700;cursor:pointer">⟳ Refresh</button>
+          <div id="route-live-badge" style="display:none;background:#e6faf3;color:var(--green);padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;animation:pulse 1.5s infinite"></span>Live Tracking
+          </div>
+        </div>
+        <div id="route-map" style="width:100%;height:420px;border-radius:14px;border:1px solid var(--border);background:#e8edf5"></div>
+        <div style="margin-top:16px" id="route-timeline-wrap">
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Route Timeline</div>
+          <div id="route-timeline"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div id="page-calendar" class="page">
+      <h2 style="font-family:'Bebas Neue';font-size:24px;letter-spacing:2px;margin-bottom:16px">Weekly Planning</h2>
+      <div style="margin-bottom:16px">
+        <button class="btn-export" onclick="openTaskModal()">➕ Add Task</button>
+      </div>
+      <div id="manager-calendar"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="page-settings" class="page">
+      <div class="settings-section">
+        <div class="settings-title">Manager Account</div>
+        <div class="settings-sub">Setup or update your manager login credentials.</div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
+          <div class="form-row">
+            <div class="form-group"><div class="form-label">Username</div><input class="form-input" id="mgr-username" autocomplete="off"/></div>
+            <div class="form-group"><div class="form-label">Email</div><input class="form-input" id="mgr-email" type="email" autocomplete="off"/></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><div class="form-label">Current Password</div><input class="form-input" id="mgr-curr-pwd" type="password" autocomplete="off"/></div>
+            <div class="form-group"><div class="form-label">New Password (leave blank to keep)</div><input class="form-input" id="mgr-new-pwd" type="password" autocomplete="off"/></div>
+          </div>
+          <button class="btn-add-rep" onclick="saveManagerAccount()">Save Manager Account</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Rep Accounts</div>
+        <div class="settings-sub">Manage your field reps — edit details, set individual targets, or remove accounts.</div>
+        <div id="rep-cards-list"></div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:14px">
+          <div class="form-title">+ Add New Rep</div>
+          <div class="form-row">
+            <div class="form-group"><div class="form-label">Full Name</div><input class="form-input" id="new-rep-name" placeholder="e.g. Thabo Nkosi"/></div>
+            <div class="form-group"><div class="form-label">PIN (4 digits)</div><input class="form-input" id="new-rep-pin" placeholder="e.g. 1234" maxlength="4" type="number"/></div>
+          </div>
+          <div class="form-group" style="margin-bottom:12px">
+            <div class="form-label">Avatar Colour</div>
+            <div class="color-row" id="color-picker">
+              <div class="color-opt selected" data-color="#0057ff" style="background:#0057ff"></div>
+              <div class="color-opt" data-color="#ff6b35" style="background:#ff6b35"></div>
+              <div class="color-opt" data-color="#00c07a" style="background:#00c07a"></div>
+              <div class="color-opt" data-color="#a855f7" style="background:#a855f7"></div>
+              <div class="color-opt" data-color="#f5a623" style="background:#f5a623"></div>
+              <div class="color-opt" data-color="#ef4444" style="background:#ef4444"></div>
+              <div class="color-opt" data-color="#06b6d4" style="background:#06b6d4"></div>
+              <div class="color-opt" data-color="#ec4899" style="background:#ec4899"></div>
+            </div>
+          </div>
+          <button class="btn-add-rep" onclick="addRep()">Create Rep Account</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Default Weekly Targets</div>
+        <div class="settings-sub">These defaults apply to reps that don't have individual targets set.</div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px;">
+            <div class="form-group"><div class="form-label">👥 Interactions</div><input class="form-input" id="tgt-interactions" type="number" value="50"/></div>
+            <div class="form-group"><div class="form-label">🚪 Door Knocks</div><input class="form-input" id="tgt-doors" type="number" value="30"/></div>
+            <div class="form-group"><div class="form-label">📋 Quotes</div><input class="form-input" id="tgt-quotes" type="number" value="15"/></div>
+            <div class="form-group"><div class="form-label">📦 Orders</div><input class="form-input" id="tgt-orders" type="number" value="5"/></div>
+            <div class="form-group"><div class="form-label">🔄 Follow-ups</div><input class="form-input" id="tgt-followups" type="number" value="10"/></div>
+          </div>
+          <button class="btn-add-rep" onclick="saveTargets()">Save Default Targets</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT REP MODAL -->
+<div class="modal-overlay" id="edit-rep-modal">
+  <div class="modal" style="max-width:560px">
+    <h3>✏ Edit Rep Account</h3>
+    <input type="hidden" id="edit-rep-id"/>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Full Name</div><input class="form-input" id="edit-rep-name" placeholder="Full name"/></div>
+      <div class="form-group"><div class="form-label">PIN (4 digits)</div><input class="form-input" id="edit-rep-pin" placeholder="4-digit PIN" maxlength="4" type="number"/></div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <div class="form-label">Avatar Colour</div>
+      <div class="color-row" id="edit-color-picker">
+        <div class="color-opt" data-color="#0057ff" style="background:#0057ff"></div>
+        <div class="color-opt" data-color="#ff6b35" style="background:#ff6b35"></div>
+        <div class="color-opt" data-color="#00c07a" style="background:#00c07a"></div>
+        <div class="color-opt" data-color="#a855f7" style="background:#a855f7"></div>
+        <div class="color-opt" data-color="#f5a623" style="background:#f5a623"></div>
+        <div class="color-opt" data-color="#ef4444" style="background:#ef4444"></div>
+        <div class="color-opt" data-color="#06b6d4" style="background:#06b6d4"></div>
+        <div class="color-opt" data-color="#ec4899" style="background:#ec4899"></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+      <div class="form-label" style="margin-bottom:10px;font-size:11px;letter-spacing:1.5px">🎯 INDIVIDUAL WEEKLY TARGETS <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(leave blank to use defaults)</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:4px">
+        <div class="form-group"><div class="form-label">👥 Interactions</div><input class="form-input" id="edit-tgt-interactions" type="number" placeholder="Default"/></div>
+        <div class="form-group"><div class="form-label">🚪 Door Knocks</div><input class="form-input" id="edit-tgt-doors" type="number" placeholder="Default"/></div>
+        <div class="form-group"><div class="form-label">📋 Quotes</div><input class="form-input" id="edit-tgt-quotes" type="number" placeholder="Default"/></div>
+        <div class="form-group"><div class="form-label">📦 Orders</div><input class="form-input" id="edit-tgt-orders" type="number" placeholder="Default"/></div>
+        <div class="form-group"><div class="form-label">🔄 Follow-ups</div><input class="form-input" id="edit-tgt-followups" type="number" placeholder="Default"/></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditRepModal()">Cancel</button>
+      <button style="background:rgba(255,59,59,0.1);color:var(--red);border:1px solid rgba(255,59,59,0.2);padding:8px 16px;border-radius:7px;cursor:pointer;font-family:'Nunito';font-size:13px;font-weight:600;margin-right:auto" onclick="deleteRepFromModal()">🗑 Delete Rep</button>
+      <button class="btn-confirm" onclick="saveEditRep()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <h3>Assign Task</h3>
+    <div class="form-group">
+      <div class="form-label">Rep</div>
+      <select class="form-input" id="task-rep" style="padding:10px 12px">
+        <option value="">Select rep...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Day</div>
+      <select class="form-input" id="task-day" style="padding:10px 12px">
+        <option value="Mon">Monday</option>
+        <option value="Tue">Tuesday</option>
+        <option value="Wed">Wednesday</option>
+        <option value="Thu">Thursday</option>
+        <option value="Fri">Friday</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Time</div>
+      <input class="form-input" id="task-time" type="time"/>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Task Description</div>
+      <textarea class="form-input" id="task-desc" style="resize:vertical;min-height:70px;padding:10px 12px" placeholder="e.g. Visit Langenhoven Park Estate — door knock campaign"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeTaskModal()">Cancel</button>
+      <button class="btn-confirm" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, getDocs, deleteField } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD14EwttVrBd8iaVE1hR1Z-ejZmeki9yaI",
+  authDomain: "rep-tracker-c50bb.firebaseapp.com",
+  projectId: "rep-tracker-c50bb",
+  storageBucket: "rep-tracker-c50bb.firebasestorage.app",
+  messagingSenderId: "1094046563701",
+  appId: "1:1094046563701:web:6d525fe509ad847b35a73c"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const DAYS = ['Mon','Tue','Wed','Thu','Fri'];
+const ACTIVITIES = ['interactions','doors','quotes','orders','followups'];
+let TARGETS = {interactions:50,doors:30,quotes:15,orders:5,followups:10};
+let currentUser = null;
+let userType = null;
+let currentRep = null;
+let selectedDay = null;
+let currentValues = {interactions:0,doors:0,quotes:0,orders:0,followups:0};
+let activityDetails = {interactions:[],doors:[],quotes:[],orders:[],followups:[]};
+let liveData = {};
+let pinEntry = '';
+let selectedColor = '#0057ff';
+let unsubWeek = null;
+let unsubPresence = null;
+let presenceData = {};
+let miniMap = null;
+let miniMarkers = [];
+let reps = {};
+
+// Background GPS tracking
+let gpsWatchId = null;
+let gpsInterval = null;
+let lastGpsPos = null;
+let presenceInterval = null;
+
+function getWeekKey(){
+  const d = new Date();
+  const jan1 = new Date(d.getFullYear(),0,1);
+  const week = Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+  return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+function getWeekLabel(){
+  const key = getWeekKey();
+  const [yr,w] = key.split('-W');
+  const jan1 = new Date(parseInt(yr),0,1);
+  const mon = new Date(jan1.getTime()+((parseInt(w)-1)*7)*86400000);
+  while(mon.getDay()!==1) mon.setDate(mon.getDate()-1);
+  const fri = new Date(mon); fri.setDate(fri.getDate()+4);
+  const fmt = d => d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+  return `Week of ${fmt(mon)} – ${fmt(fri)}`;
+}
+
+function getTodayDay(){
+  const map = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const n = map[new Date().getDay()];
+  return DAYS.includes(n) ? n : 'Mon';
+}
+
+function getDaysLeft(){
+  const d = new Date().getDay();
+  if(d===0||d===6) return 0;
+  return 6-d;
+}
+
+// LOGIN
+window.switchLoginTab = function(tab){
+  document.getElementById('tab-rep-btn').classList.toggle('active',tab==='rep');
+  document.getElementById('tab-mgr-btn').classList.toggle('active',tab==='manager');
+  document.getElementById('rep-login-form').classList.toggle('active',tab==='rep');
+  document.getElementById('manager-login-form').classList.toggle('active',tab==='manager');
+  pinEntry='';
+  updatePinDisplay();
+};
+
+window.numpad = function(val){
+  if(val==='del') pinEntry = pinEntry.slice(0,-1);
+  else if(pinEntry.length<4) pinEntry += val;
+  updatePinDisplay();
+};
+
+function updatePinDisplay(){
+  for(let i=0;i<4;i++) document.getElementById('pc'+i).classList.toggle('filled',i<pinEntry.length);
+}
+
+window.doRepLogin = async function(){
+  const nameInput = document.getElementById('login-name').value.trim().toLowerCase();
+  const errEl = document.getElementById('rep-login-error');
+  errEl.textContent = '';
+  if(!nameInput){errEl.textContent='Please enter your name.';return;}
+  if(pinEntry.length!==4){errEl.textContent='Please enter your 4-digit PIN.';return;}
+  const btn = document.getElementById('rep-login-btn');
+  btn.disabled = true;btn.textContent='Checking...';
+  try{
+    const snap = await getDocs(collection(db,'reps'));
+    let found = null;
+    snap.forEach(d=>{
+      const data = d.data();
+      if(data.name.toLowerCase()===nameInput && data.pin===pinEntry) found={id:d.id,...data};
+    });
+    if(found){
+      currentRep = found;
+      userType = 'rep';
+      localStorage.setItem('vox_session',JSON.stringify({type:'rep',id:found.id,name:found.name,color:found.color}));
+      launchRepApp();
+    }else{
+      errEl.textContent='Name or PIN incorrect.';
+      pinEntry='';
+      updatePinDisplay();
+    }
+  }catch(e){
+    console.error(e);
+    errEl.textContent='Connection error.';
+  }
+  btn.disabled = false;btn.textContent='Login';
+};
+
+window.doManagerLogin = async function(){
+  const username = document.getElementById('manager-username').value.trim();
+  const password = document.getElementById('manager-password').value;
+  const errEl = document.getElementById('manager-login-error');
+  errEl.textContent = '';
+  if(!username||!password){errEl.textContent='Please enter username and password.';return;}
+  const btn = document.getElementById('manager-login-btn');
+  btn.disabled = true;btn.textContent='Checking...';
+  try{
+    const snap = await getDocs(collection(db,'manager'));
+    let found = false;
+    snap.forEach(d=>{
+      const data = d.data();
+      if((data.username===username || data.email===username) && data.password===password){
+        found = true;
+      }
+    });
+    if(found){
+      userType = 'manager';
+      localStorage.setItem('vox_session',JSON.stringify({type:'manager',username:username}));
+      launchManagerApp();
+    }else{
+      errEl.textContent='Invalid credentials.';
+    }
+  }catch(e){
+    console.error(e);
+    errEl.textContent='Connection error.';
+  }
+  btn.disabled = false;btn.textContent='Login';
+};
+
+function launchRepApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('rep-app').style.display='block';
+  document.getElementById('date-chip').textContent = new Date().toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
+  document.getElementById('header-title').textContent = currentRep.name.split(' ')[0]+"'s Logger";
+  applyRepColor(currentRep.color||'#0057ff');
+  subscribeRepWeek();
+  switchPage('log');
+  selectDay(getTodayDay());
+  renderRepCalendar();
+  startBackgroundTracking();
+}
+
+// ── Background GPS & Presence ──────────────────────────────────────────────
+
+async function writePresenceAndGPS(pos){
+  if(!currentRep) return;
+  lastGpsPos = pos;
+  const lat = pos.coords.latitude;
+  const lng = pos.coords.longitude;
+  let address = '';
+  try{
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+    const j = await r.json();
+    address = j.display_name?.split(',').slice(0,3).join(',') || '';
+  }catch(e){}
+  const now = Date.now();
+  const todayDay = getTodayDay();
+  const locKey = `loc_${currentRep.id}_${todayDay}_${now}`;
+  const presenceData = {
+    repId: currentRep.id,
+    name: currentRep.name,
+    color: currentRep.color||'#0057ff',
+    online: true,
+    lat, lng, address,
+    lastSeen: now,
+    day: todayDay
+  };
+  try{
+    // Write presence (online status + latest position)
+    await setDoc(doc(db,'presence',currentRep.id), presenceData);
+    // Write GPS breadcrumb to week doc (throttled — max 1 per 60s)
+    const weekUpdates = {};
+    weekUpdates[locKey] = {lat,lng,address,timestamp:now,day:todayDay,
+      interactions:currentValues.interactions||0,
+      doors:currentValues.doors||0,
+      quotes:currentValues.quotes||0,
+      orders:currentValues.orders||0,
+      followups:currentValues.followups||0
+    };
+    await setDoc(doc(db,'weeks',getWeekKey()), weekUpdates, {merge:true});
+    // Update rep location dot on mini map if visible
+    document.getElementById('loc-dot').className = 'loc-status-dot got';
+    document.getElementById('loc-status-text').textContent = `📍 Tracking active — ${new Date(now).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}`;
+  }catch(e){ console.warn('GPS write failed',e); }
+}
+
+function startBackgroundTracking(){
+  if(!navigator.geolocation){ showToast('GPS not available on this device'); return; }
+
+  // Immediate first fix
+  navigator.geolocation.getCurrentPosition(
+    pos => writePresenceAndGPS(pos),
+    err => console.warn('Initial GPS error',err),
+    {enableHighAccuracy:true, timeout:15000, maximumAge:0}
+  );
+
+  // watchPosition for continuous background updates (fires on movement)
+  gpsWatchId = navigator.geolocation.watchPosition(
+    pos => { lastGpsPos = pos; },
+    err => console.warn('GPS watch error',err),
+    {enableHighAccuracy:true, maximumAge:0, timeout:30000}
+  );
+
+  // Write to Firestore every 60 seconds using latest position
+  gpsInterval = setInterval(async ()=>{
+    if(lastGpsPos && currentRep){
+      await writePresenceAndGPS(lastGpsPos);
+    } else {
+      // Try a fresh fix if we lost the watch
+      navigator.geolocation.getCurrentPosition(
+        pos => writePresenceAndGPS(pos),
+        ()=>{},
+        {enableHighAccuracy:true, timeout:15000, maximumAge:30000}
+      );
+    }
+  }, 60000);
+
+  // Heartbeat — update online status every 30s even without GPS movement
+  presenceInterval = setInterval(async ()=>{
+    if(!currentRep) return;
+    try{
+      await setDoc(doc(db,'presence',currentRep.id),{
+        online: true,
+        lastSeen: Date.now(),
+        repId: currentRep.id,
+        name: currentRep.name,
+        color: currentRep.color||'#0057ff'
+      },{merge:true});
+    }catch(e){}
+  }, 30000);
+
+  // Handle page visibility — when app comes back to foreground, get fresh GPS
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'visible' && currentRep){
+      navigator.geolocation.getCurrentPosition(
+        pos => writePresenceAndGPS(pos),
+        ()=>{},
+        {enableHighAccuracy:true, timeout:15000, maximumAge:0}
+      );
+    }
+  });
+}
+
+function stopBackgroundTracking(){
+  if(gpsWatchId !== null){ navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
+  if(gpsInterval){ clearInterval(gpsInterval); gpsInterval = null; }
+  if(presenceInterval){ clearInterval(presenceInterval); presenceInterval = null; }
+  lastGpsPos = null;
+  // Mark offline in presence
+  if(currentRep){
+    setDoc(doc(db,'presence',currentRep.id),{online:false,lastSeen:Date.now()},{merge:true}).catch(()=>{});
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+
+function launchManagerApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('manager-app').style.display='block';
+  subscribeManagerData();
+  switchManagerPage('dashboard');
+  loadManagerSettings();
+}
+
+function applyRepColor(color){
+  document.getElementById('app-header').style.background = color;
+  document.querySelectorAll('.cnt-plus').forEach(b=>b.style.background=color);
+  document.querySelectorAll('.detail-button').forEach(b=>b.style.background=color);
+  document.querySelector('.submit-btn').style.background = `linear-gradient(135deg,${color},${color}bb)`;
+}
+
+window.logout = function(){
+  stopBackgroundTracking();
+  localStorage.removeItem('vox_session');
+  if(unsubWeek){ unsubWeek(); unsubWeek = null; }
+  if(unsubPresence){ unsubPresence(); unsubPresence = null; }
+  currentRep = null;
+  userType = null;
+  pinEntry = '';
+  updatePinDisplay();
+  document.getElementById('login-name').value = '';
+  document.getElementById('rep-login-error').textContent = '';
+  document.getElementById('manager-username').value = '';
+  document.getElementById('manager-password').value = '';
+  document.getElementById('manager-login-error').textContent = '';
+  document.getElementById('rep-app').style.display='none';
+  document.getElementById('manager-app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+};
+
+// REP APP
+function subscribeRepWeek(){
+  if(unsubWeek) unsubWeek();
+  unsubWeek = onSnapshot(doc(db,'weeks',getWeekKey()),snap=>{
+    liveData = snap.exists() ? snap.data() : {};
+    if(liveData._targets) TARGETS = liveData._targets;
+    setSyncStatus(true);
+    if(selectedDay) loadDayValues();
+    renderRepCalendar();
+  },()=>setSyncStatus(false));
+}
+
+function setSyncStatus(live){
+  document.getElementById('sync-dot').className = 'sync-dot' + (live ? ' live' : '');
+  document.getElementById('sync-text').textContent = live ? 'Live — syncing' : 'Offline';
+}
+
+window.switchPage = function(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('tab-'+page).classList.add('active');
+  if(page==='progress') renderRepProgress();
+  if(page==='map'){initMiniMap();renderMiniMap();}
+};
+
+window.selectDay = function(day){
+  selectedDay = day;
+  const color = currentRep?.color||'#0057ff';
+  document.querySelectorAll('.day-chip').forEach(c=>{
+    c.classList.toggle('active',c.dataset.day===day);
+    if(c.dataset.day===day){c.style.background=color;c.style.borderColor=color;c.style.color='#fff';}
+    else{c.style.background='';c.style.borderColor='';c.style.color='';}
+  });
+  loadDayValues();
+};
+
+function loadDayValues(){
+  // Close any open panels when switching days
+  if(typeof clearPanelFields === 'function'){
+    ACTIVITIES.forEach(a=>{
+      const panel = document.getElementById('detail-'+a);
+      if(panel) panel.classList.remove('active');
+      const plusBtn = document.getElementById('plus-'+a);
+      if(plusBtn){ plusBtn.disabled = false; plusBtn.style.opacity = ''; }
+      clearPanelFields(a);
+    });
+  }
+  pendingActivity = null;
+  ACTIVITIES.forEach(a=>{
+    currentValues[a] = parseInt(liveData[currentRep.id+'-'+selectedDay+'-'+a])||0;
+    document.getElementById('val-'+a).textContent = currentValues[a];
+  });
+}
+
+// Track which activity panel is currently open/pending
+let pendingActivity = null;
+
+function closeDetailPanel(activity){
+  const panel = document.getElementById('detail-'+activity);
+  if(panel) panel.classList.remove('active');
+  const plusBtn = document.getElementById('plus-'+activity);
+  if(plusBtn){ plusBtn.disabled = false; plusBtn.style.opacity = ''; }
+  if(pendingActivity === activity) pendingActivity = null;
+}
+
+function clearPanelFields(activity){
+  if(activity==='interactions'){
+    document.getElementById('int-fname').value='';
+    document.getElementById('int-lname').value='';
+    document.getElementById('int-type').value='';
+    document.getElementById('int-area').value='';
+    document.getElementById('int-conditional-fields').innerHTML='';
+  } else if(activity==='doors'){
+    document.getElementById('door-address').value='';
+  } else if(activity==='quotes'){
+    document.getElementById('quote-number').value='';
+  } else if(activity==='orders'){
+    document.getElementById('order-account').value='';
+    document.getElementById('order-number').value='';
+    document.getElementById('order-type').value='';
+  } else if(activity==='followups'){
+    document.getElementById('fu-account').value='';
+    document.getElementById('fu-name').value='';
+    document.getElementById('fu-comments').value='';
+    document.getElementById('fu-feedback').value='';
+  }
+}
+
+window.cancelActivity = function(activity){
+  // Reverse the count increment
+  currentValues[activity] = Math.max(0, currentValues[activity] - 1);
+  document.getElementById('val-'+activity).textContent = currentValues[activity];
+  clearPanelFields(activity);
+  closeDetailPanel(activity);
+  showToast('Cancelled — count unchanged');
+};
+
+window.adjustActivity = function(activity, delta){
+  // If pressing + and a form is already pending, block it
+  if(delta > 0 && pendingActivity && pendingActivity !== activity){
+    showToast('Please save or cancel the open form first');
+    return;
+  }
+  currentValues[activity] = Math.max(0, currentValues[activity] + delta);
+  document.getElementById('val-'+activity).textContent = currentValues[activity];
+
+  if(delta > 0){
+    // Open the detail panel and lock the + button until saved/cancelled
+    const panel = document.getElementById('detail-'+activity);
+    if(panel){
+      panel.classList.add('active');
+      pendingActivity = activity;
+      const plusBtn = document.getElementById('plus-'+activity);
+      if(plusBtn){ plusBtn.disabled = true; plusBtn.style.opacity = '0.4'; }
+      // Scroll to the panel smoothly
+      setTimeout(()=>panel.scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
+    }
+  } else {
+    // Minus pressed — if panel was open for this activity, close it
+    if(pendingActivity === activity){
+      clearPanelFields(activity);
+      closeDetailPanel(activity);
+    }
+  }
+};
+
+window.updateInteractionFields = function(){
+  const type = document.getElementById('int-type').value;
+  const container = document.getElementById('int-conditional-fields');
+  container.innerHTML = '';
+  if(type==='whatsapp'||type==='call'){
+    container.innerHTML = `<div class="detail-group"><label class="detail-label">Phone Number <span class="detail-required">*</span></label><input class="detail-input" id="int-phone" placeholder="e.g. +27 123 456 7890"/></div>`;
+  }else if(type==='email'){
+    container.innerHTML = `<div class="detail-group"><label class="detail-label">Email Address <span class="detail-required">*</span></label><input class="detail-input" id="int-email" placeholder="e.g. customer@email.com"/></div>`;
+  }
+};
+
+window.saveInteraction = function(){
+  const fname = document.getElementById('int-fname').value.trim();
+  const lname = document.getElementById('int-lname').value.trim();
+  const type = document.getElementById('int-type').value;
+  const area = document.getElementById('int-area').value.trim();
+  if(!fname){showToast('⚠ First name required');return;}
+  if(!lname){showToast('⚠ Last name required');return;}
+  if(!type){showToast('⚠ Interaction type required');return;}
+  let contact = '';
+  if(type==='whatsapp'||type==='call'){
+    contact = document.getElementById('int-phone').value.trim();
+    if(!contact){showToast('⚠ Phone number required');return;}
+  }else if(type==='email'){
+    contact = document.getElementById('int-email').value.trim();
+    if(!contact){showToast('⚠ Email required');return;}
+  }
+  const record = {fname,lname,type,contact,area,timestamp:Date.now(),day:selectedDay};
+  activityDetails.interactions.push(record);
+  clearPanelFields('interactions');
+  closeDetailPanel('interactions');
+  showToast('✓ Interaction recorded');
+};
+
+window.saveDoorKnock = function(){
+  const address = document.getElementById('door-address').value.trim();
+  if(!address){showToast('⚠ Address required');return;}
+  const record = {address,timestamp:Date.now(),day:selectedDay};
+  activityDetails.doors.push(record);
+  clearPanelFields('doors');
+  closeDetailPanel('doors');
+  showToast('✓ Door knock recorded');
+};
+
+window.saveQuote = function(){
+  const number = document.getElementById('quote-number').value.trim();
+  if(!number){showToast('⚠ Quote number required');return;}
+  const record = {number,timestamp:Date.now(),day:selectedDay};
+  activityDetails.quotes.push(record);
+  clearPanelFields('quotes');
+  closeDetailPanel('quotes');
+  showToast('✓ Quote recorded');
+};
+
+window.saveOrder = function(){
+  const account = document.getElementById('order-account').value.trim();
+  const order = document.getElementById('order-number').value.trim();
+  const type = document.getElementById('order-type').value;
+  if(!account){showToast('⚠ Account number required');return;}
+  if(!order){showToast('⚠ Order number required');return;}
+  if(!type){showToast('⚠ Service type required');return;}
+  const record = {account,order,type,timestamp:Date.now(),day:selectedDay};
+  activityDetails.orders.push(record);
+  clearPanelFields('orders');
+  closeDetailPanel('orders');
+  showToast('✓ Order recorded');
+};
+
+window.saveFollowUp = function(){
+  const account = document.getElementById('fu-account').value.trim();
+  const name = document.getElementById('fu-name').value.trim();
+  const comments = document.getElementById('fu-comments').value.trim();
+  const feedback = document.getElementById('fu-feedback').value.trim();
+  if(!account){showToast('⚠ Account number required');return;}
+  if(!name){showToast('⚠ Customer name required');return;}
+  if(!comments){showToast('⚠ Comments required');return;}
+  const record = {account,name,comments,feedback,timestamp:Date.now(),day:selectedDay};
+  activityDetails.followups.push(record);
+  clearPanelFields('followups');
+  closeDetailPanel('followups');
+  showToast('✓ Follow-up recorded');
+};
+
+window.submitDay = async function(){
+  if(!currentRep||!selectedDay) return;
+  const btn = document.getElementById('save-btn');
+  const ind = document.getElementById('saving-indicator');
+  btn.disabled = true;btn.textContent='📍 Getting location...';
+  ind.textContent = 'Requesting GPS position...';
+
+  let locEntry = null;
+  try{
+    if(!navigator.geolocation) throw {code:0};
+    const pos = await new Promise((resolve,reject)=>{
+      navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+    });
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    let address = '';
+    try{
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+      const j = await r.json();
+      address = j.display_name?.split(',').slice(0,3).join(',')||'';
+    }catch(e){}
+    locEntry = {lat,lng,address,timestamp:Date.now(),day:selectedDay,...Object.fromEntries(ACTIVITIES.map(a=>[a,currentValues[a]]))};
+    document.getElementById('loc-dot').className = 'loc-status-dot got';
+    document.getElementById('loc-status-text').textContent = `📍 Location captured at ${new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}`;
+  }catch(e){
+    let msg = '⚠ Location unavailable — activity saved without GPS.';
+    if(location.protocol !== 'https:' && location.hostname !== 'localhost'){
+      msg = '⚠ GPS needs HTTPS. Open the app via your hosted URL, not a local file.';
+    } else if(e.code === 1){
+      msg = '⚠ Location denied — allow it in browser/phone settings then retry.';
+    } else if(e.code === 2){
+      msg = '⚠ GPS signal lost. Move to an open area and try again.';
+    }
+    ind.textContent = msg;
+  }
+
+  btn.textContent = '💾 Saving...';
+  try{
+    const updates = {};
+    ACTIVITIES.forEach(a=>{updates[currentRep.id+'-'+selectedDay+'-'+a] = currentValues[a];});
+    if(locEntry){
+      const locKey = `loc_${currentRep.id}_${selectedDay}_${Date.now()}`;
+      updates[locKey] = locEntry;
+    }
+    ACTIVITIES.forEach(a=>{
+      activityDetails[a].forEach((rec,i)=>{
+        const detKey = `detail_${currentRep.id}_${a}_${Date.now()}_${i}`;
+        updates[detKey] = rec;
+      });
+    });
+    await setDoc(doc(db,'weeks',getWeekKey()),updates,{merge:true});
+    showToast(locEntry ? '✓ Saved with location!' : '✓ Saved');
+    ind.textContent = 'Last saved: '+new Date().toLocaleTimeString('en-ZA');
+    activityDetails = {interactions:[],doors:[],quotes:[],orders:[],followups:[]};
+  }catch(e){
+    showToast('❌ Save failed');
+    ind.textContent = 'Save failed. Try again.';
+  }
+  btn.disabled = false;btn.textContent = '📍 Save & Share Location';
+};
+
+function renderRepCalendar(){
+  const container = document.getElementById('rep-calendar');
+  const color = currentRep?.color||'#0057ff';
+  const calendarDays = DAYS.map(day=>{
+    const tasks = Object.keys(liveData)
+      .filter(k=>k.startsWith('task_'+currentRep.id+'_'+day+'_'))
+      .map(k=>liveData[k]);
+    const tasksHtml = tasks.length>0?tasks.map(t=>`<div class="calendar-task"><div class="calendar-time">${t.time||'All day'}</div>${t.desc}</div>`).join(''):'<div style="font-size:9px;color:var(--muted)">—</div>';
+    return `<div class="calendar-day" style="border:2px solid ${tasks.length>0?color:'var(--border)'}"><div class="calendar-day-name">${day}</div>${tasksHtml}</div>`;
+  }).join('');
+  container.innerHTML = `<div class="calendar-grid">${calendarDays}</div>`;
+}
+
+function initMiniMap(){
+  if(miniMap) return;
+  miniMap = L.map('rep-mini-map').setView([-29.1218,26.2140],13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(miniMap);
+}
+
+function getMyLocations(){
+  return Object.keys(liveData)
+    .filter(k=>k.startsWith('loc_'+currentRep.id+'_'))
+    .map(k=>liveData[k])
+    .sort((a,b)=>a.timestamp-b.timestamp);
+}
+
+function renderMiniMap(){
+  if(!miniMap) return;
+  const locs = getMyLocations();
+  const list = document.getElementById('loc-history-list');
+  if(!locs.length){
+    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">No check-ins recorded yet.</div>';
+    return;
+  }
+  const color = currentRep?.color||'#0057ff';
+  const miniMapMarkers = [];
+  const latlngs = locs.map(e=>[e.lat,e.lng]);
+  if(latlngs.length>1) L.polyline(latlngs,{color,weight:2,dashArray:'5,8',opacity:0.6}).addTo(miniMap);
+  locs.forEach((e,i)=>{
+    const isLast = i===locs.length-1;
+    const icon = L.divIcon({html:`<div style="background:${color};width:${isLast?14:9}px;height:${isLast?14:9}px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.3)"></div>`,className:'',iconAnchor:[isLast?7:4,isLast?7:4]});
+    const m = L.marker([e.lat,e.lng],{icon}).addTo(miniMap);
+    const t = new Date(e.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+    m.bindPopup(`<b>${e.day} ${t}</b>`);
+    miniMapMarkers.push(m);
+  });
+  if(latlngs.length>1) miniMap.fitBounds(L.latLngBounds(latlngs),{padding:[20,20]});
+  else miniMap.setView(latlngs[0],15);
+  list.innerHTML = [...locs].reverse().map(e=>{
+    const t = new Date(e.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+    const act = `👥${e.interactions||0} 🚪${e.doors||0} 📋${e.quotes||0} 📦${e.orders||0} 🔄${e.followups||0}`;
+    return `<div class="loc-hist-item"><div class="loc-hist-time">${e.day} ${t}</div><div style="flex:1;color:var(--text);font-size:12px">${e.address?e.address.split(',')[0]:'Location'}</div><div style="font-size:11px;color:var(--muted)">${act}</div></div>`;
+  }).join('');
+}
+
+function getWeekTotals(){
+  const t = {interactions:0,doors:0,quotes:0,orders:0,followups:0};
+  DAYS.forEach(day=>ACTIVITIES.forEach(a=>{t[a]+=parseInt(liveData[currentRep.id+'-'+day+'-'+a])||0;}));
+  return t;
+}
+
+function getDayTotal(day){
+  return ACTIVITIES.reduce((s,a)=>s+(parseInt(liveData[currentRep.id+'-'+day+'-'+a])||0),0);
+}
+
+function renderRepProgress(){
+  const totals = getWeekTotals();
+  const daysLeft = getDaysLeft();
+  const todayDay = getTodayDay();
+  const color = currentRep?.color||'#0057ff';
+  const overall = Math.round(ACTIVITIES.reduce((s,a)=>s+Math.min(1,totals[a]/TARGETS[a]),0)/ACTIVITIES.length*100);
+  document.getElementById('hero-pct').textContent = overall+'%';
+  const msgs = [[90,'🏆 Crushing it!'],[70,'🔥 Great momentum!'],[50,'💪 Halfway there!'],[25,'⚡ Step it up!'],[0,'🚀 Get going!']];
+  document.getElementById('hero-sub').textContent = msgs.find(([min])=>overall>=min)[1];
+  const hero = document.getElementById('progress-hero');
+  if(overall>=90) hero.style.background = 'linear-gradient(135deg,#00c07a,#009955)';
+  else if(overall>=60) hero.style.background = `linear-gradient(135deg,${color},${color}bb)`;
+  else if(overall>=30) hero.style.background = 'linear-gradient(135deg,#f5a623,#ff6b35)';
+  else hero.style.background = 'linear-gradient(135deg,#ff3b3b,#ff6b35)';
+  const daysLogged = DAYS.filter(d=>getDayTotal(d)>0).length;
+  const bestDay = DAYS.reduce((b,d)=>getDayTotal(d)>getDayTotal(b)?d:b,DAYS[0]);
+  document.getElementById('stat-days').textContent = daysLogged;
+  document.getElementById('stat-best').textContent = getDayTotal(bestDay)>0?bestDay:'—';
+  document.getElementById('stat-orders').textContent = totals.orders;
+  const grads = ['linear-gradient(90deg,#0057ff,#00c0ff)','linear-gradient(90deg,#ff6b35,#ffaa00)','linear-gradient(90deg,#f5a623,#ffd166)','linear-gradient(90deg,#a855f7,#d946ef)','linear-gradient(90deg,#00c07a,#00e5a0)'];
+  const cols = ['var(--accent)','var(--orange)','var(--yellow)','#a855f7','var(--green)'];
+  const icons = ['👥','🚪','📋','📦','🔄'];
+  const names = ['Interactions','Door Knocks','Quotes','Orders','Follow-ups'];
+  const metricsHtml = ACTIVITIES.map((a,i)=>{
+    const val = totals[a],t = TARGETS[a];
+    const pct = Math.min(100,Math.round(val/t*100));
+    let statusClass = 'status-red',statusText = 'Not started',daysText='';
+    if(pct>=100){statusClass='status-green';statusText='✓ Target Hit!';daysText=(val-t)+' above 🎯';}
+    else if(pct>=60){statusClass='status-yellow';statusText='On Track';daysText=daysLeft>0?'Need '+Math.ceil((t-val)/daysLeft)+'/day':'';}
+    else if(val===0){statusClass='status-red';statusText='Not started';daysText=daysLeft>0?'Need '+Math.ceil(t/daysLeft)+'/day':'';}
+    else{statusClass='status-red';statusText='Behind';daysText=daysLeft>0?'Need '+Math.ceil((t-val)/daysLeft)+'/day':'';}
+    return `<div class="metric-progress-card"><div class="mp-top"><div class="mp-left"><div class="mp-icon">${icons[i]}</div><div class="mp-name">${names[i]}</div></div><div class="mp-nums" style="color:${cols[i]}">${val}/${t}</div></div><div class="mp-track"><div class="mp-fill" style="width:${pct}%;background:${grads[i]}"></div></div><div class="mp-footer"><span class="mp-status ${statusClass}">${statusText}</span><span class="mp-days-left">${daysText}</span></div></div>`;
+  }).join('');
+  document.getElementById('progress-metrics').innerHTML = metricsHtml;
+  document.getElementById('day-breakdown').innerHTML = DAYS.map(day=>{
+    const total = getDayTotal(day);
+    const isToday = day===todayDay;
+    const dots = ACTIVITIES.map(a=>`<div class="db-dot ${(parseInt(liveData[currentRep.id+'-'+day+'-'+a])||0)>0?'filled':''}"></div>`).join('');
+    return `<div class="db-row" ${isToday?'style="background:#f0f5ff;border-radius:8px;padding:7px 6px;margin:0 -4px"':''}>
+      <div class="db-day">${day}${isToday?` <span style="font-size:9px;font-weight:800;color:${color}">●</span>`:''}</div>
+      <div class="db-dots">${dots}</div>
+      <div class="db-total" style="color:${total>0?color:'var(--border)'}">${total||'—'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('week-info').textContent = getWeekLabel();
+}
+
+// MANAGER APP
+function subscribeManagerData(){
+  onSnapshot(collection(db,'reps'),snap=>{
+    reps={};
+    snap.forEach(d=>{reps[d.id]=d.data();});
+    renderManagerDashboard();
+    updateTaskRepSelect();
+    updateMapRepFilter();
+    updateRouteRepFilter();
+  });
+  onSnapshot(doc(db,'weeks',getWeekKey()),snap=>{
+    liveData = snap.exists()?snap.data():{};
+    renderManagerDashboard();
+    renderManagerCalendar();
+    if(managerMap && document.getElementById('page-map')?.classList.contains('active')) renderManagerMap();
+    if(routeMap && document.getElementById('page-routes')?.classList.contains('active')) renderRepRoute();
+  });
+  // Live presence — who is online right now
+  unsubPresence = onSnapshot(collection(db,'presence'),snap=>{
+    presenceData={};
+    snap.forEach(d=>{ presenceData[d.id]=d.data(); });
+    renderOnlineBanner();
+    renderManagerDashboard();
+    if(managerMap && document.getElementById('page-map')?.classList.contains('active')) renderManagerMap();
+  });
+}
+
+function isRepOnline(repId){
+  const p = presenceData[repId];
+  if(!p || !p.online) return false;
+  // Consider online if heartbeat within last 3 minutes
+  return (Date.now() - (p.lastSeen||0)) < 180000;
+}
+
+function renderOnlineBanner(){
+  const banner = document.getElementById('online-banner');
+  const list = document.getElementById('online-rep-list');
+  if(!banner || !list) return;
+  const onlineReps = Object.keys(reps).filter(id=>isRepOnline(id));
+  if(!onlineReps.length){
+    banner.style.display='none';
+    return;
+  }
+  banner.style.display='block';
+  list.innerHTML = onlineReps.map(id=>{
+    const r = reps[id];
+    const p = presenceData[id];
+    const color = r.color||'#0057ff';
+    const initials = r.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    const minsAgo = Math.round((Date.now()-(p.lastSeen||0))/60000);
+    const lastAddr = p.address ? p.address.split(',')[0] : '';
+    return `<div style="display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 13px;min-width:180px">
+      <div style="position:relative">
+        <div style="width:34px;height:34px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:14px;color:#fff">${initials}</div>
+        <div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:#00c07a;border:2px solid var(--card)"></div>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:13px">${r.name}</div>
+        <div style="font-size:10px;color:var(--muted)">${minsAgo===0?'Just now':minsAgo+'m ago'}${lastAddr?' · '+lastAddr:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderManagerDashboard(){
+  const kpiIds = ['interactions','doors','quotes','orders','followups'];
+  const icons = ['👥','🚪','📋','📦','🔄'];
+  let teamTotals = {interactions:0,doors:0,quotes:0,orders:0,followups:0};
+  Object.keys(reps).forEach(id=>{
+    ACTIVITIES.forEach(a=>{
+      DAYS.forEach(day=>{
+        teamTotals[a] += parseInt(liveData[id+'-'+day+'-'+a])||0;
+      });
+    });
+  });
+  const kpiHtml = kpiIds.map((a,i)=>`
+    <div class="kpi-card"><div class="kpi-label">${icons[i]} ${a.toUpperCase()}</div><div class="kpi-value">${teamTotals[a]}</div><div class="kpi-sub">This week (team)</div></div>
+  `).join('');
+  document.getElementById('kpi-section').innerHTML = kpiHtml;
+
+  const repIds = Object.keys(reps);
+  if(!repIds.length){
+    document.getElementById('reps-grid-manager').innerHTML = '<div class="empty-state"><div class="empty-icon">👥</div><div>No reps added yet. Go to ⚙ Settings.</div></div>';
+    return;
+  }
+
+  const repHtml = repIds.map(id=>{
+    const r = reps[id];
+    const initials = r.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    const totals = {interactions:0,doors:0,quotes:0,orders:0,followups:0};
+    DAYS.forEach(day=>ACTIVITIES.forEach(a=>{totals[a]+=parseInt(liveData[id+'-'+day+'-'+a])||0;}));
+    // Use per-rep targets if set, else fall back to global TARGETS
+    const repTargets = r.targets ? {...TARGETS,...r.targets} : TARGETS;
+    const avg = ACTIVITIES.reduce((s,a)=>s+(totals[a]/repTargets[a]),0)/ACTIVITIES.length;
+    const bc = avg>=1?'badge-green':avg>=0.6?'badge-yellow':'badge-red';
+    const bt = avg>=1?'On Target':avg>=0.6?'Near Target':'Below Target';
+    
+    const expandableRows = ACTIVITIES.map(a=>{
+      const detailRecords = Object.keys(liveData)
+        .filter(k=>k.startsWith('detail_'+id+'_'+a+'_'))
+        .map(k=>liveData[k])
+        .sort((x,y)=>y.timestamp-x.timestamp);
+      const recordsHtml = detailRecords.length>0?detailRecords.map((rec)=>{
+        let content='';
+        if(a==='interactions') content = `${rec.fname} ${rec.lname} (${rec.type}${rec.contact?': '+rec.contact:''})${rec.area?' — '+rec.area:''}`;
+        else if(a==='doors') content = `${rec.address}`;
+        else if(a==='quotes') content = `Quote #${rec.number}`;
+        else if(a==='orders') content = `${rec.account} → Order #${rec.order} (${rec.type})`;
+        else if(a==='followups') content = `${rec.account}: ${rec.name} — ${rec.comments}${rec.feedback?' [Feedback: '+rec.feedback+']':''}`;
+        return `<div class="record-item"><span class="record-label">${rec.day}:</span> ${content}</div>`;
+      }).join(''):'<div class="record-item"><span class="record-label">—</span> No records</div>';
+      return `<div class="expandable-section" onclick="toggleExpand(this)">
+        <div class="expandable-title"><span>${['👥','🚪','📋','📦','🔄'][ACTIVITIES.indexOf(a)]} ${a.charAt(0).toUpperCase()+a.slice(1)}: ${totals[a]}/${repTargets[a]}</span><span class="expand-icon">▼</span></div>
+        <div class="expandable-content">${recordsHtml}</div>
+      </div>`;
+    }).join('');
+
+    const online = isRepOnline(id);
+    const onlineBadge = online
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;background:#e6faf3;color:#00a060;font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px"><span style="width:7px;height:7px;border-radius:50%;background:#00c07a;display:inline-block;animation:pulse 1.5s infinite"></span>Online</span>`
+      : `<span style="background:var(--bg);color:var(--muted);font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;border:1px solid var(--border)">Offline</span>`;
+    return `<div class="rep-panel">
+      <div class="rep-header">
+        <div class="rep-name-block">
+          <div style="position:relative">
+            <div class="rep-avatar" style="background:${r.color||'#0057ff'}">${initials}</div>
+            ${online?`<div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:#00c07a;border:2px solid var(--card)"></div>`:''}
+          </div>
+          <div><div class="rep-name">${r.name}</div><div class="rep-title">FTTH Sales Agent</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          ${onlineBadge}
+          <span class="perf-badge ${bc}">${bt}</span>
+          <button onclick="openEditRepModal('${id}')" style="background:var(--accent-light);color:var(--accent);border:none;border-radius:7px;padding:4px 10px;font-family:'Nunito';font-size:11px;font-weight:700;cursor:pointer">✏ Edit</button>
+        </div>
+      </div>
+      ${expandableRows}
+    </div>`;
+  }).join('');
+  document.getElementById('reps-grid-manager').innerHTML = repHtml;
+}
+
+window.toggleExpand = function(el){
+  el.classList.toggle('expanded');
+  el.querySelector('.expandable-content').classList.toggle('shown');
+  el.querySelector('.expand-icon').classList.toggle('expanded');
+};
+
+function renderManagerCalendar(){
+  const container = document.getElementById('manager-calendar');
+  const calendarDays = DAYS.map(day=>{
+    const repTasks = Object.keys(reps).map(repId=>{
+      const tasks = Object.keys(liveData)
+        .filter(k=>k.startsWith('task_'+repId+'_'+day+'_'))
+        .map(k=>liveData[k]);
+      return tasks.map(t=>({...t,repId,repName:reps[repId].name,repColor:reps[repId].color||'#0057ff'}));
+    }).flat().sort((a,b)=>a.time?.localeCompare(b.time||''));
+    
+    const tasksHtml = repTasks.length>0?repTasks.map(t=>`
+      <div class="calendar-task" style="border-left:3px solid ${t.repColor}">
+        <div style="font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">${t.repName}</div>
+        <div class="calendar-time">${t.time||'All day'}</div>
+        <div style="font-size:10px">${t.desc}</div>
+      </div>
+    `).join(''):'<div style="font-size:10px;color:var(--muted);padding:4px 0">—</div>';
+    
+    return `<div class="calendar-day"><div class="calendar-day-name">${day}</div>${tasksHtml}</div>`;
+  }).join('');
+  container.innerHTML = `<div class="calendar-grid">${calendarDays}</div>`;
+}
+
+window.openTaskModal = function(){
+  document.getElementById('task-modal').classList.add('open');
+};
+
+window.closeTaskModal = function(){
+  document.getElementById('task-modal').classList.remove('open');
+  document.getElementById('task-rep').value='';
+  document.getElementById('task-day').value='Mon';
+  document.getElementById('task-time').value='';
+  document.getElementById('task-desc').value='';
+};
+
+function updateTaskRepSelect(){
+  const sel = document.getElementById('task-rep');
+  sel.innerHTML = '<option value="">Select rep...</option>';
+  Object.keys(reps).forEach(id=>{
+    const opt = document.createElement('option');
+    opt.value = id;opt.textContent = reps[id].name;
+    sel.appendChild(opt);
+  });
+}
+
+window.saveTask = async function(){
+  const repId = document.getElementById('task-rep').value;
+  const day = document.getElementById('task-day').value;
+  const time = document.getElementById('task-time').value;
+  const desc = document.getElementById('task-desc').value.trim();
+  if(!repId){showToast('Select a rep');return;}
+  if(!desc){showToast('Enter task description');return;}
+  const taskKey = `task_${repId}_${day}_${Date.now()}`;
+  const updates = {[taskKey]:{repId,day,time,desc,timestamp:Date.now()}};
+  await setDoc(doc(db,'weeks',getWeekKey()),updates,{merge:true});
+  showToast('✓ Task assigned');
+  closeTaskModal();
+};
+
+function loadManagerSettings(){
+  getDocs(collection(db,'manager')).then(s=>{
+    let found = null;
+    s.forEach(d=>{found=d.data();});
+    if(found){
+      document.getElementById('mgr-username').value = found.username||'';
+      document.getElementById('mgr-email').value = found.email||'';
+    }
+  });
+  renderRepCards();
+}
+
+function renderRepCards(){
+  const list = document.getElementById('rep-cards-list');
+  const ids = Object.keys(reps);
+  if(!ids.length){
+    list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:6px 0 14px">No reps yet. Add one below.</div>';
+    return;
+  }
+  list.innerHTML = ids.map(id=>{
+    const r = reps[id];
+    const initials = r.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    const color = r.color||'#0057ff';
+    const hasCustomTargets = r.targets && Object.keys(r.targets).length>0;
+    const tgtBadge = hasCustomTargets
+      ? `<span style="font-size:10px;background:rgba(0,87,255,0.1);color:var(--accent);padding:2px 7px;border-radius:10px;font-weight:700">Custom Targets</span>`
+      : `<span style="font-size:10px;background:var(--bg);color:var(--muted);padding:2px 7px;border-radius:10px;border:1px solid var(--border)">Default Targets</span>`;
+    return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;border-left:4px solid ${color}">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:16px;color:#fff;flex-shrink:0">${initials}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px">${r.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:1px">PIN: ${r.pin} &nbsp;·&nbsp; ${tgtBadge}</div>
+        </div>
+        <div style="display:flex;gap:7px;flex-shrink:0">
+          <button onclick="openEditRepModal('${id}')" style="background:var(--accent-light);color:var(--accent);border:none;border-radius:8px;padding:7px 14px;font-family:'Nunito';font-size:12px;font-weight:700;cursor:pointer">✏ Edit</button>
+          <button onclick="deleteRep('${id}')" style="background:rgba(255,59,59,0.1);color:var(--red);border:none;border-radius:8px;padding:7px 12px;font-family:'Nunito';font-size:12px;font-weight:700;cursor:pointer">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let editRepColor = '#0057ff';
+
+window.openEditRepModal = function(id){
+  const r = reps[id];
+  if(!r) return;
+  document.getElementById('edit-rep-id').value = id;
+  document.getElementById('edit-rep-name').value = r.name;
+  document.getElementById('edit-rep-pin').value = r.pin;
+  editRepColor = r.color||'#0057ff';
+  // Set colour picker
+  document.getElementById('edit-color-picker').querySelectorAll('.color-opt').forEach(o=>{
+    o.classList.toggle('selected', o.dataset.color===editRepColor);
+    o.onclick = ()=>{
+      document.getElementById('edit-color-picker').querySelectorAll('.color-opt').forEach(x=>x.classList.remove('selected'));
+      o.classList.add('selected');
+      editRepColor = o.dataset.color;
+    };
+  });
+  // Individual targets
+  const t = r.targets||{};
+  document.getElementById('edit-tgt-interactions').value = t.interactions||'';
+  document.getElementById('edit-tgt-doors').value = t.doors||'';
+  document.getElementById('edit-tgt-quotes').value = t.quotes||'';
+  document.getElementById('edit-tgt-orders').value = t.orders||'';
+  document.getElementById('edit-tgt-followups').value = t.followups||'';
+  document.getElementById('edit-rep-modal').classList.add('open');
+};
+
+window.closeEditRepModal = function(){
+  document.getElementById('edit-rep-modal').classList.remove('open');
+};
+
+window.saveEditRep = async function(){
+  const id = document.getElementById('edit-rep-id').value;
+  const name = document.getElementById('edit-rep-name').value.trim();
+  const pin = document.getElementById('edit-rep-pin').value.trim();
+  if(!name){showToast('Name required');return;}
+  if(pin.length!==4||isNaN(pin)){showToast('PIN must be 4 digits');return;}
+  const targets = {};
+  const ti = document.getElementById('edit-tgt-interactions').value;
+  const td = document.getElementById('edit-tgt-doors').value;
+  const tq = document.getElementById('edit-tgt-quotes').value;
+  const to = document.getElementById('edit-tgt-orders').value;
+  const tf = document.getElementById('edit-tgt-followups').value;
+  if(ti) targets.interactions = parseInt(ti);
+  if(td) targets.doors = parseInt(td);
+  if(tq) targets.quotes = parseInt(tq);
+  if(to) targets.orders = parseInt(to);
+  if(tf) targets.followups = parseInt(tf);
+  await setDoc(doc(db,'reps',id),{name,pin,color:editRepColor,targets},{merge:true});
+  closeEditRepModal();
+  showToast('✓ Rep updated: '+name);
+};
+
+window.deleteRepFromModal = async function(){
+  const id = document.getElementById('edit-rep-id').value;
+  const r = reps[id];
+  if(!r) return;
+  if(!confirm(`Delete ${r.name}? This cannot be undone.`)) return;
+  await deleteDoc(doc(db,'reps',id));
+  closeEditRepModal();
+  showToast('Rep removed');
+};
+
+let selectedRepColor = '#0057ff';
+
+function initColorPicker(){
+  document.getElementById('color-picker').querySelectorAll('.color-opt').forEach(o=>{
+    o.onclick = ()=>{
+      document.getElementById('color-picker').querySelectorAll('.color-opt').forEach(x=>x.classList.remove('selected'));
+      o.classList.add('selected');
+      selectedRepColor = o.dataset.color;
+    };
+  });
+}
+initColorPicker();
+
+window.addRep = async function(){
+  const name = document.getElementById('new-rep-name').value.trim();
+  const pin = document.getElementById('new-rep-pin').value.trim();
+  if(!name){showToast('Enter name');return;}
+  if(pin.length!==4||isNaN(pin)){showToast('PIN must be 4 digits');return;}
+  const id = 'rep_'+Date.now();
+  await setDoc(doc(db,'reps',id),{name,pin,color:selectedRepColor,createdAt:Date.now()});
+  document.getElementById('new-rep-name').value='';
+  document.getElementById('new-rep-pin').value='';
+  selectedRepColor='#0057ff';
+  showToast('✓ Rep created: '+name);
+};
+
+window.deleteRep = async function(id){
+  if(!confirm('Delete this rep?')) return;
+  await deleteDoc(doc(db,'reps',id));
+  showToast('Rep removed');
+};
+
+window.saveTargets = async function(){
+  TARGETS = {
+    interactions:parseInt(document.getElementById('tgt-interactions').value)||50,
+    doors:parseInt(document.getElementById('tgt-doors').value)||30,
+    quotes:parseInt(document.getElementById('tgt-quotes').value)||15,
+    orders:parseInt(document.getElementById('tgt-orders').value)||5,
+    followups:parseInt(document.getElementById('tgt-followups').value)||10
+  };
+  await setDoc(doc(db,'weeks',getWeekKey()),{_targets:TARGETS},{merge:true});
+  showToast('✓ Targets saved');
+};
+
+window.saveManagerAccount = async function(){
+  const username = document.getElementById('mgr-username').value.trim();
+  const email = document.getElementById('mgr-email').value.trim();
+  const currPwd = document.getElementById('mgr-curr-pwd').value;
+  const newPwd = document.getElementById('mgr-new-pwd').value;
+  if(!username||!email){showToast('Enter username and email');return;}
+  const updates = {username,email};
+  if(newPwd){if(newPwd.length<6){showToast('Password min 6 chars');return;} updates.password=newPwd;}
+  await setDoc(doc(db,'manager','account'),updates,{merge:true});
+  document.getElementById('mgr-curr-pwd').value='';
+  document.getElementById('mgr-new-pwd').value='';
+  showToast('✓ Manager account updated');
+};
+
+window.exportRepData = function(type){
+  if(type==='individual'){
+    const repName = prompt('Enter rep name to export (partial match OK):');
+    if(!repName) return;
+    const rep = Object.values(reps).find(r=>r.name.toLowerCase().includes(repName.toLowerCase()));
+    if(!rep){showToast('Rep not found');return;}
+    const repId = Object.keys(reps).find(k=>reps[k].name===rep.name);
+    exportToExcel(repId,rep.name,type);
+  }else{
+    exportToExcel(null,null,type);
+  }
+};
+
+function exportToExcel(repId,repName,type){
+  if(type==='individual'&&repId){
+    const rows = [['Activity','Details','Day','Timestamp']];
+    Object.keys(liveData).filter(k=>k.startsWith('detail_'+repId+'_')).forEach(k=>{
+      const rec = liveData[k];
+      let details = '';
+      const parts = k.split('_');
+      const activity = parts[2];
+      if(activity==='interactions') details = `${rec.fname} ${rec.lname} (${rec.type}${rec.contact?': '+rec.contact:''})`;
+      else if(activity==='doors') details = rec.address;
+      else if(activity==='quotes') details = `Quote #${rec.number}`;
+      else if(activity==='orders') details = `Account: ${rec.account}, Order: ${rec.order}, Type: ${rec.type}`;
+      else if(activity==='followups') details = `Account: ${rec.account}, Name: ${rec.name}, Comments: ${rec.comments}${rec.feedback?', Feedback: '+rec.feedback:''}`;
+      rows.push([activity,details,rec.day,new Date(rec.timestamp).toLocaleString('en-ZA')]);
+    });
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb,ws,repName);
+    XLSX.writeFile(wb,`Vox_${repName}_${getWeekKey()}.xlsx`);
+  }else{
+    const allRows = [['Rep Name','Activity','Details','Day','Timestamp']];
+    Object.keys(reps).forEach(repId=>{
+      const repName = reps[repId].name;
+      Object.keys(liveData).filter(k=>k.startsWith('detail_'+repId+'_')).forEach(k=>{
+        const rec = liveData[k];
+        let details = '';
+        const parts = k.split('_');
+        const activity = parts[2];
+        if(activity==='interactions') details = `${rec.fname} ${rec.lname} (${rec.type}${rec.contact?': '+rec.contact:''})`;
+        else if(activity==='doors') details = rec.address;
+        else if(activity==='quotes') details = `Quote #${rec.number}`;
+        else if(activity==='orders') details = `Account: ${rec.account}, Order: ${rec.order}, Type: ${rec.type}`;
+        else if(activity==='followups') details = `Account: ${rec.account}, Name: ${rec.name}, Comments: ${rec.comments}${rec.feedback?', Feedback: '+rec.feedback:''}`;
+        allRows.push([repName,activity,details,rec.day,new Date(rec.timestamp).toLocaleString('en-ZA')]);
+      });
+    });
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(allRows);
+    XLSX.utils.book_append_sheet(wb,ws,'All Activities');
+    XLSX.writeFile(wb,`Vox_AllReps_${getWeekKey()}.xlsx`);
+  }
+  showToast('✓ Excel exported');
+}
+
+window.switchManagerPage = function(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.manager-nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  if(page==='calendar') renderManagerCalendar();
+  if(page==='dashboard') renderManagerDashboard();
+  if(page==='map') initManagerMap();
+  if(page==='routes') initRouteMap();
+};
+
+let managerMap = null;
+let routeMap = null;
+let routeInterval = null;
+
+function getTodayStr(){
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
+}
+
+function getAllRepLocationsToday(){
+  const today = getTodayStr();
+  const result = {};
+  Object.keys(reps).forEach(id=>{
+    const locs = Object.keys(liveData)
+      .filter(k=>k.startsWith('loc_'+id+'_'+today+'_')||k.startsWith('loc_'+id+'_Mon_')||k.startsWith('loc_'+id+'_Tue_')||k.startsWith('loc_'+id+'_Wed_')||k.startsWith('loc_'+id+'_Thu_')||k.startsWith('loc_'+id+'_Fri_'))
+      .filter(k=>{
+        const entry = liveData[k];
+        // filter to today by timestamp (last 24h)
+        return entry && entry.timestamp && (Date.now()-entry.timestamp)<86400000;
+      })
+      .map(k=>liveData[k])
+      .sort((a,b)=>a.timestamp-b.timestamp);
+    if(locs.length) result[id] = locs;
+  });
+  return result;
+}
+
+function updateMapRepFilter(){
+  const sel = document.getElementById('map-rep-filter');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="all">All Active Reps</option>';
+  Object.keys(reps).forEach(id=>{
+    const opt = document.createElement('option');
+    opt.value = id; opt.textContent = reps[id].name;
+    sel.appendChild(opt);
+  });
+  sel.value = current || 'all';
+}
+
+function updateRouteRepFilter(){
+  const sel = document.getElementById('route-rep-filter');
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Select a rep...</option>';
+  Object.keys(reps).forEach(id=>{
+    const opt = document.createElement('option');
+    opt.value = id; opt.textContent = reps[id].name;
+    sel.appendChild(opt);
+  });
+  if(current) sel.value = current;
+}
+
+function initManagerMap(){
+  updateMapRepFilter();
+  const container = document.getElementById('manager-live-map');
+  if(!container) return;
+  // Remove any existing Leaflet instance cleanly
+  if(managerMap){ try{ managerMap.remove(); }catch(e){} managerMap = null; }
+  // Clear any Leaflet leftovers from the div
+  container.innerHTML = '';
+  container._leaflet_id = null;
+  // Wait for browser to paint the visible container before Leaflet measures it
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      managerMap = L.map(container, {zoomControl:true, attributionControl:true}).setView([-29.1218,26.2140],12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        attribution:'© <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
+        maxZoom:19
+      }).addTo(managerMap);
+      managerMap.invalidateSize(true);
+      renderManagerMap();
+    });
+  }, 200);
+}
+
+window.renderManagerMap = function(){
+  if(!managerMap) return;
+  managerMap.eachLayer(l=>{if(!(l instanceof L.TileLayer)) managerMap.removeLayer(l);});
+  const filterRepId = document.getElementById('map-rep-filter')?.value||'all';
+
+  // Merge week-based locations with live presence positions
+  const allLocs = getAllRepLocationsToday();
+
+  // Also add reps who are online via presence but may not have week loc entries yet
+  Object.keys(presenceData).forEach(id=>{
+    const p = presenceData[id];
+    if(!p.lat || !p.lng) return;
+    if(!allLocs[id]) allLocs[id] = [];
+    // Add presence entry if it's newer than the last stored loc
+    const lastStored = allLocs[id].length ? allLocs[id][allLocs[id].length-1].timestamp : 0;
+    if(p.lastSeen > lastStored){
+      allLocs[id].push({lat:p.lat, lng:p.lng, address:p.address||'', timestamp:p.lastSeen, day:p.day||getTodayStr(), fromPresence:true});
+      allLocs[id].sort((a,b)=>a.timestamp-b.timestamp);
+    }
+  });
+
+  const repIds = filterRepId==='all' ? Object.keys(allLocs) : (allLocs[filterRepId]?[filterRepId]:[]);
+  const onlineCount = repIds.filter(id=>isRepOnline(id)).length;
+  const countEl = document.getElementById('map-live-count');
+  if(countEl) countEl.textContent = `${onlineCount} online · ${repIds.length} active today`;
+
+  const allLatLngs = [];
+  const cardsHtml = [];
+
+  repIds.forEach(id=>{
+    const rep = reps[id];
+    if(!rep) return;
+    const color = rep.color||'#0057ff';
+    const online = isRepOnline(id);
+    const locs = allLocs[id];
+    const latLngs = locs.map(e=>[e.lat,e.lng]);
+    allLatLngs.push(...latLngs);
+    if(latLngs.length>1) L.polyline(latLngs,{color,weight:3,opacity:0.7}).addTo(managerMap);
+
+    locs.forEach((e,i)=>{
+      const isLast = i===locs.length-1;
+      const sz = isLast ? (online ? 20 : 14) : 9;
+      const pulseStyle = isLast && online ? `box-shadow:0 0 0 4px ${color}44;animation:pulse 1.5s infinite` : '';
+      const icon = L.divIcon({
+        html:`<div style="background:${isLast&&online?color:color+'99'};width:${sz}px;height:${sz}px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);${pulseStyle}"></div>`,
+        className:'',iconAnchor:[sz/2,sz/2]
+      });
+      const m = L.marker([e.lat,e.lng],{icon}).addTo(managerMap);
+      const t = new Date(e.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+      m.bindPopup(`<b>${rep.name}</b>${online&&isLast?' 🟢':''}<br>${t}<br>${e.address?e.address.split(',')[0]:''}`);
+    });
+
+    const lastLoc = locs[locs.length-1];
+    const lastTime = new Date(lastLoc.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+    const minsAgo = Math.round((Date.now()-lastLoc.timestamp)/60000);
+    const freshness = online
+      ? `<span style="color:#00a060;font-weight:700;font-size:11px">🟢 Online · ${minsAgo===0?'just now':minsAgo+'m ago'}</span>`
+      : minsAgo<60
+        ? `<span style="color:var(--muted);font-size:11px">⚪ ${minsAgo}m ago</span>`
+        : `<span style="color:var(--muted);font-size:11px">⚪ ${Math.round(minsAgo/60)}h ago</span>`;
+    const initials = rep.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    cardsHtml.push(`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;border-top:3px solid ${color}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="position:relative">
+          <div style="width:36px;height:36px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Bebas Neue';font-size:14px">${initials}</div>
+          ${online?`<div style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:#00c07a;border:2px solid var(--card)"></div>`:''}
+        </div>
+        <div><div style="font-weight:700;font-size:14px">${rep.name}</div><div style="font-size:11px;color:var(--muted)">${locs.length} point${locs.length!==1?'s':''} logged today</div></div>
+        <div style="margin-left:auto">${freshness}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted)">📍 ${lastLoc.address?lastLoc.address.split(',')[0]:'Unknown location'} · ${lastTime}</div>
+    </div>`);
+  });
+
+  document.getElementById('map-rep-cards').innerHTML = cardsHtml.length
+    ? cardsHtml.join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:12px 0">No reps have location data yet today.</div>';
+
+  if(allLatLngs.length>1) managerMap.fitBounds(L.latLngBounds(allLatLngs),{padding:[40,40]});
+  else if(allLatLngs.length===1) managerMap.setView(allLatLngs[0],15);
+  else managerMap.setView([-29.1218,26.2140],12);
+};
+
+function initRouteMap(){
+  updateRouteRepFilter();
+  const container = document.getElementById('route-map');
+  if(!container) return;
+  if(routeMap){ try{ routeMap.remove(); }catch(e){} routeMap = null; }
+  container.innerHTML = '';
+  container._leaflet_id = null;
+  setTimeout(()=>{
+    requestAnimationFrame(()=>{
+      routeMap = L.map(container, {zoomControl:true, attributionControl:true}).setView([-29.1218,26.2140],12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+        attribution:'© <a href="https://www.openstreetmap.org">OpenStreetMap</a>',
+        maxZoom:19
+      }).addTo(routeMap);
+      routeMap.invalidateSize(true);
+      renderRepRoute();
+    });
+  }, 200);
+  if(routeInterval) clearInterval(routeInterval);
+  routeInterval = setInterval(()=>{
+    const sel = document.getElementById('route-rep-filter');
+    if(sel && sel.value && routeMap) renderRepRoute();
+  }, 30000);
+}
+
+window.renderRepRoute = function(){
+  if(!routeMap) return;
+  routeMap.eachLayer(l=>{if(!(l instanceof L.TileLayer)) routeMap.removeLayer(l);});
+  const repId = document.getElementById('route-rep-filter')?.value;
+  const badge = document.getElementById('route-live-badge');
+  const timeline = document.getElementById('route-timeline');
+  if(!repId){
+    if(timeline) timeline.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">Select a rep to view their route.</div>';
+    if(badge) badge.style.display='none';
+    return;
+  }
+  const rep = reps[repId];
+  if(!rep){if(timeline) timeline.innerHTML='<div style="color:var(--muted);font-size:13px">Rep not found.</div>';return;}
+  const color = rep.color||'#0057ff';
+
+  // Gather locations from the week doc (historical breadcrumbs)
+  const weekLocs = Object.keys(liveData)
+    .filter(k=>k.startsWith('loc_'+repId+'_'))
+    .map(k=>liveData[k])
+    .filter(e=>e && e.lat && e.lng && e.timestamp && (Date.now()-e.timestamp)<86400000);
+
+  // Merge in the latest presence location if it is more recent
+  const presence = presenceData[repId];
+  if(presence && presence.lat && presence.lng && presence.lastSeen){
+    const alreadyHave = weekLocs.some(l=>Math.abs(l.timestamp-presence.lastSeen)<5000);
+    if(!alreadyHave) weekLocs.push({
+      lat:presence.lat, lng:presence.lng,
+      address:presence.address||'',
+      timestamp:presence.lastSeen,
+      day:presence.day||getTodayStr(),
+      fromPresence:true
+    });
+  }
+
+  const locs = weekLocs.sort((a,b)=>a.timestamp-b.timestamp);
+
+  if(badge) badge.style.display = (locs.length && isRepOnline(repId)) ? 'inline-flex' : 'none';
+  if(!locs.length){
+    if(timeline) timeline.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">No location data for today yet. Location is recorded automatically every 60 seconds once the rep is logged in.</div>';
+    routeMap.setView([-29.1218,26.2140],12);
+    return;
+  }
+
+  const latLngs = locs.map(e=>[e.lat,e.lng]);
+  if(latLngs.length>1) L.polyline(latLngs,{color,weight:4,opacity:0.85}).addTo(routeMap);
+
+  locs.forEach((e,i)=>{
+    const isLast = i===locs.length-1;
+    const online = isLast && isRepOnline(repId);
+    const sz = isLast ? 22 : 18;
+    const icon = L.divIcon({
+      html:`<div style="background:${isLast?color:'#fff'};color:${isLast?'#fff':color};width:${sz}px;height:${sz}px;border-radius:50%;border:2.5px solid ${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,0.3);${online?'animation:pulse 1.5s infinite':''}">${i+1}</div>`,
+      className:'',iconAnchor:[sz/2,sz/2]
+    });
+    const m = L.marker([e.lat,e.lng],{icon}).addTo(routeMap);
+    const t = new Date(e.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+    m.bindPopup(`<b>Stop ${i+1}${online?' 🟢 Live':''}</b><br>${t}<br>${e.address?e.address.split(',')[0]:''}`);
+  });
+
+  if(latLngs.length>1) routeMap.fitBounds(L.latLngBounds(latLngs),{padding:[40,40]});
+  else routeMap.setView(latLngs[0],15);
+
+  // Timeline
+  let totalDist = 0;
+  const timelineItems = locs.map((e,i)=>{
+    const t = new Date(e.timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+    const isLast = i===locs.length-1;
+    const online = isLast && isRepOnline(repId);
+    let distStr = '';
+    if(i>0){
+      const prev = locs[i-1];
+      const R=6371,dLat=(e.lat-prev.lat)*Math.PI/180,dLon=(e.lng-prev.lng)*Math.PI/180;
+      const a=Math.sin(dLat/2)**2+Math.cos(prev.lat*Math.PI/180)*Math.cos(e.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+      const d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+      totalDist+=d;
+      distStr=`+${d<1?(d*1000).toFixed(0)+'m':d.toFixed(1)+'km'}`;
+    }
+    const act=`👥${e.interactions||0} 🚪${e.doors||0} 📦${e.orders||0}`;
+    return `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0">
+        <div style="width:22px;height:22px;border-radius:50%;background:${isLast?color:'#fff'};color:${isLast?'#fff':color};border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800">${i+1}</div>
+        ${!isLast?`<div style="width:2px;height:18px;background:${color}33"></div>`:''}
+      </div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:13px">${t}</span>
+          ${distStr?`<span style="font-size:11px;background:${color}15;color:${color};padding:1px 7px;border-radius:10px;font-weight:600">${distStr}</span>`:''}
+          ${online?`<span style="font-size:10px;background:#e6faf3;color:var(--green);padding:1px 7px;border-radius:10px;font-weight:700">🟢 Live</span>`:''}
+          ${isLast&&!online?`<span style="font-size:10px;background:var(--accent-light);color:var(--accent);padding:1px 7px;border-radius:10px;font-weight:700">Latest</span>`:''}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${e.address?e.address.split(',').slice(0,2).join(','):'Location recorded'}</div>
+        <div style="font-size:11px;color:var(--text);margin-top:2px;opacity:0.65">${act}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const totalDistStr=totalDist<1?(totalDist*1000).toFixed(0)+'m':totalDist.toFixed(1)+'km';
+  if(timeline) timeline.innerHTML=`<div style="background:var(--accent-light);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;font-weight:700;color:var(--accent)">
+    📍 ${locs.length} stop${locs.length!==1?'s':''} &nbsp;·&nbsp; 📏 ${totalDistStr} covered &nbsp;·&nbsp; ⏱ Started ${new Date(locs[0].timestamp).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'})}
+  </div>${timelineItems}`;
+};
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── Service Worker Registration ────────────────────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+    console.log('SW registered, scope:', reg.scope);
+    // Listen for RETRY_GPS messages from SW
+    navigator.serviceWorker.addEventListener('message', e=>{
+      if(e.data?.type==='RETRY_GPS' && currentRep && lastGpsPos){
+        writePresenceAndGPS(lastGpsPos);
+      }
+    });
+  }).catch(err=>console.warn('SW registration failed:', err));
+}
+
+// ── Permission Screen Logic ────────────────────────────────────────────────
+async function checkAndShowPermissionScreen(){
+  // On HTTPS: check geolocation permission state
+  const isHTTPS = location.protocol === 'https:' || location.hostname === 'localhost';
+  if(!isHTTPS){
+    // Not HTTPS — skip permission screen, warn in console
+    console.warn('Geolocation requires HTTPS. App must be hosted on Firebase or similar.');
+    showLoginScreen();
+    return;
+  }
+  if(!navigator.geolocation){
+    showLoginScreen();
+    return;
+  }
+  try{
+    const perm = await navigator.permissions.query({name:'geolocation'});
+    if(perm.state === 'granted'){
+      // Already granted — go straight to login
+      showLoginScreen();
+    } else {
+      // 'prompt' or 'denied' — show our permission screen
+      showPermissionScreen();
+    }
+  } catch(e){
+    // permissions API not available — show permission screen to be safe
+    showPermissionScreen();
+  }
+}
+
+function showPermissionScreen(){
+  document.getElementById('permission-screen').style.display = 'flex';
+  document.getElementById('login-screen').style.display = 'none';
+}
+
+function showLoginScreen(){
+  document.getElementById('permission-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+window.requestLocationPermission = async function(){
+  const btn = document.getElementById('grant-location-btn');
+  const status = document.getElementById('permission-status');
+  btn.disabled = true;
+  btn.textContent = 'Requesting...';
+  status.textContent = '';
+  try{
+    await new Promise((resolve, reject)=>{
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy:true, timeout:15000, maximumAge:0
+      });
+    });
+    status.style.color = '#00c07a';
+    status.textContent = '✓ Location access granted!';
+    setTimeout(showLoginScreen, 800);
+  } catch(err){
+    btn.disabled = false;
+    btn.textContent = 'Allow Location Access';
+    if(err.code === 1){
+      status.style.color = '#ff6b35';
+      status.textContent = 'Permission denied. Please allow location in your browser settings, then reload.';
+    } else if(err.code === 2){
+      status.style.color = '#ff6b35';
+      status.textContent = 'Location unavailable. Make sure GPS is on.';
+    } else {
+      status.style.color = '#ff6b35';
+      status.textContent = 'Could not get location. Try again.';
+    }
+  }
+};
+
+window.skipLocationPermission = function(){
+  showLoginScreen();
+};
+
+// ── Keep Service Worker alive while rep is active ──────────────────────────
+setInterval(()=>{
+  if(navigator.serviceWorker?.controller && userType === 'rep'){
+    const ch = new MessageChannel();
+    navigator.serviceWorker.controller.postMessage({type:'KEEP_ALIVE'}, [ch.port2]);
+  }
+}, 20000);
+
+// ── Initialise app ─────────────────────────────────────────────────────────
+const saved = localStorage.getItem('vox_session');
+if(saved){
+  try{
+    const s = JSON.parse(saved);
+    if(s.type==='rep'){
+      getDocs(collection(db,'reps')).then(snap=>{
+        let found = null;
+        snap.forEach(d=>{if(d.id===s.id) found={id:d.id,...d.data()};});
+        if(found){ currentRep=found; userType='rep'; launchRepApp(); }
+        else { localStorage.removeItem('vox_session'); checkAndShowPermissionScreen(); }
+      });
+    } else {
+      localStorage.removeItem('vox_session');
+      checkAndShowPermissionScreen();
+    }
+  } catch(e){ console.error(e); localStorage.removeItem('vox_session'); checkAndShowPermissionScreen(); }
+} else {
+  checkAndShowPermissionScreen();
+}
+
+// ── Wake Lock ───────────────────────────────────────────────────────────────
+let wakeLock = null;
+async function requestWakeLock(){
+  try{
+    if('wakeLock' in navigator){
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release',()=>{ wakeLock=null; });
+    }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',async()=>{
+  if(document.visibilityState==='visible'){
+    if(userType==='rep' && !wakeLock) await requestWakeLock();
+    if(userType==='rep' && currentRep){
+      navigator.geolocation.getCurrentPosition(
+        pos=>writePresenceAndGPS(pos), ()=>{},
+        {enableHighAccuracy:true, timeout:15000, maximumAge:0}
+      );
+    }
+  }
+});
+requestWakeLock();
+
+</script>
+</body>
+</html>
